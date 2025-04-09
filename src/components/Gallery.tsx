@@ -19,16 +19,14 @@ const Gallery: React.FC<GalleryProps> = ({
   }, [images]);
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
-    console.log("Mouse enter on container");
-    const img = e.currentTarget.querySelector('img');
+    const img = e.currentTarget.querySelector("img");
     if (img) {
       img.style.transform = "scale(1.15)";
     }
   };
 
   const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
-    console.log("Mouse leave from container");
-    const img = e.currentTarget.querySelector('img');
+    const img = e.currentTarget.querySelector("img");
     if (img) {
       img.style.transform = "scale(1)";
     }
