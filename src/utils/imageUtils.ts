@@ -82,13 +82,24 @@ export function generateLGTMImage(
 
 /**
  * Canvasをblobに変換する
+ * @param canvas 変換するCanvas要素
+ * @param format 画像フォーマット ('image/png', 'image/webp', 'image/jpeg')
+ * @param quality 圧縮品質 (0.0 ～ 1.0) - WebPとJPEG形式でのみ有効
  */
-export function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+export function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  format: string = "image/webp",
+  quality: number = 0.8
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob);
-      else reject(new Error("Failed to create image blob"));
-    }, "image/png");
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Failed to create image blob"));
+      },
+      format,
+      quality
+    );
   });
 }
 

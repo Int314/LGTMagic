@@ -73,12 +73,23 @@ export async function uploadImage(
   blob: Blob
 ): Promise<{ url: string | null; error: string | null }> {
   try {
+    // Get content type from blob
+    const contentType = blob.type || "image/webp";
+
+    // Determine file extension based on content type
+    const fileExtension =
+      contentType === "image/webp"
+        ? "webp"
+        : contentType === "image/jpeg"
+        ? "jpg"
+        : "png";
+
     // Upload to Supabase Storage with public access
-    const fileName = `lgtm-${Date.now()}.png`;
+    const fileName = `lgtm-${Date.now()}.${fileExtension}`;
     const { data, error: uploadError } = await supabase.storage
       .from("lgtm-images")
       .upload(fileName, blob, {
-        contentType: "image/png",
+        contentType,
         cacheControl: "3600",
         upsert: false,
       });
