@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 interface GalleryProps {
   isLoading: boolean;
@@ -14,6 +14,26 @@ const Gallery: React.FC<GalleryProps> = ({
   images,
   onImageClick,
 }) => {
+  useEffect(() => {
+    console.log("Gallery component rendered with", images.length, "images");
+  }, [images]);
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    console.log("Mouse enter on container");
+    const img = e.currentTarget.querySelector('img');
+    if (img) {
+      img.style.transform = "scale(1.15)";
+    }
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    console.log("Mouse leave from container");
+    const img = e.currentTarget.querySelector('img');
+    if (img) {
+      img.style.transform = "scale(1)";
+    }
+  };
+
   return (
     <div className="space-y-4 mb-12">
       <h2 className="text-2xl font-semibold text-center">Recent LGTM Images</h2>
@@ -27,15 +47,28 @@ const Gallery: React.FC<GalleryProps> = ({
           {images.map((url, index) => (
             <div
               key={index}
-              className="relative group"
+              className="relative overflow-hidden rounded-lg cursor-pointer transition-all duration-300"
               onClick={() => onImageClick(url)}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              style={{
+                transformOrigin: "center",
+              }}
             >
               <img
                 src={url}
                 alt={`LGTM ${index + 1}`}
-                className="w-full h-64 object-cover rounded-lg shadow-lg cursor-pointer transition-transform hover:scale-105"
+                className="w-full h-64 object-cover rounded-lg shadow-lg transition-all duration-300"
+                style={{
+                  transformOrigin: "center",
+                  transform: "scale(1)",
+                  transition: "transform 0.3s ease-in-out",
+                }}
                 loading="lazy"
               />
+
+              {/* ホバー効果のためのオーバーレイ */}
+              <div className="absolute inset-0 bg-black bg-opacity-10 opacity-0 hover:opacity-100 transition-opacity rounded-lg"></div>
             </div>
           ))}
         </div>

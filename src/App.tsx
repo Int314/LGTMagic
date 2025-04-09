@@ -10,8 +10,8 @@ function App() {
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [addLGTMText, setAddLGTMText] = useState(true);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // ギャラリー画像を読み込む
   useEffect(() => {
@@ -84,7 +84,7 @@ function App() {
             setAddLGTMText={setAddLGTMText}
           />
 
-          {/* 画像生成プレビュー */}
+          {/* 画像生成 */}
           <ImageGenerator
             selectedImage={selectedImage}
             addLGTMText={addLGTMText}
