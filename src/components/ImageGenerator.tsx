@@ -1,11 +1,14 @@
 import React, { useRef, useState, useEffect } from "react";
 import { generateLGTMImage, canvasToBlob } from "../utils/imageUtils";
 import { uploadImage } from "../services/supabase";
+import { getRemainingUploads } from "../utils/storageUtils";
 
 interface ImageGeneratorProps {
   selectedImage: string | null;
   addLGTMText: boolean;
   onImageUploaded?: () => void;
+  onUploadCountUpdated?: () => void;
+  setSelectedImage?: (image: string | null) => void; // 親コンポーネントから渡されるsetSelectedImage関数
 }
 
 /**
@@ -15,18 +18,28 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   selectedImage,
   addLGTMText,
   onImageUploaded,
+  onUploadCountUpdated,
+  setSelectedImage,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 内部で画像の処理状態を追跡
+  const [processedImage, setProcessedImage] = useState<string | null>(null);
   // 画像形式と品質の設定は内部的に使用するがUIから削除
   const imageFormat = "image/webp";
   const imageQuality = 0.8;
 
   // 画像が選択されたらLGTM画像を生成
   useEffect(() => {
-    if (selectedImage && canvasRef.current) {
+    // 新しい画像が選択された場合、または画像が変わった場合のみ処理を実行
+    if (
+      selectedImage &&
+      selectedImage !== processedImage &&
+      canvasRef.current
+    ) {
+      setProcessedImage(selectedImage); // 現在処理中の画像を記録
       generateImage();
     }
   }, [selectedImage, addLGTMText]);
@@ -68,6 +81,16 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       if (error) throw new Error(error);
       if (url) {
         onImageUploaded?.();
+        // アップロード回数が更新されたことを親コンポーネントに通知
+        onUploadCountUpdated?.();
+
+        // アップロード完了後、selectedImageをリセットして次の画像選択を可能にする
+        if (setSelectedImage) {
+          setTimeout(() => {
+            setSelectedImage(null);
+            setProcessedImage(null);
+          }, 100); // 少し遅延を入れて状態の更新が確実に反映されるようにする
+        }
       }
     } catch (err) {
       console.error("Error uploading image:", err);

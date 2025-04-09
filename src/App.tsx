@@ -12,6 +12,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [addLGTMText, setAddLGTMText] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploadCountUpdated, setUploadCountUpdated] = useState(0);
 
   // ギャラリー画像を読み込む
   useEffect(() => {
@@ -47,12 +48,17 @@ function App() {
     setIsLoading(false);
   };
 
+  // アップロード回数が更新された時のハンドラー
+  const handleUploadCountUpdated = () => {
+    setUploadCountUpdated((prev) => prev + 1);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-8">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-4xl font-bold text-center mb-2">LGTMagic</h1>
         <p className="text-gray-400 text-center mb-8">
-          画像を魔法のようにLGTMスタンプに変換
+          Transform your images into magical LGTM stamps
         </p>
 
         {error && (
@@ -82,6 +88,7 @@ function App() {
             onImageSelected={setSelectedImage}
             addLGTMText={addLGTMText}
             setAddLGTMText={setAddLGTMText}
+            uploadCountUpdated={uploadCountUpdated}
           />
 
           {/* 画像生成 */}
@@ -89,6 +96,8 @@ function App() {
             selectedImage={selectedImage}
             addLGTMText={addLGTMText}
             onImageUploaded={loadGalleryImages}
+            onUploadCountUpdated={handleUploadCountUpdated}
+            setSelectedImage={setSelectedImage} // setSelectedImage関数を渡す
           />
         </div>
       </div>

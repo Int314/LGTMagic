@@ -1,11 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ImagePlus, Link as LinkIcon } from "lucide-react";
 import { loadImageFromUrl } from "../utils/imageUtils";
+import { getRemainingUploads, DAILY_UPLOAD_LIMIT } from "../utils/storageUtils";
+import { checkUploadLimitByIp } from "../services/supabase";
 
 interface UploadFormProps {
   onImageSelected: (imageSource: string) => void;
   addLGTMText: boolean;
   setAddLGTMText: (value: boolean) => void;
+  uploadCountUpdated?: number; // アップロード回数更新時に親コンポーネントから渡される値
 }
 
 /**
@@ -16,9 +19,41 @@ const UploadForm: React.FC<UploadFormProps> = ({
   onImageSelected,
   addLGTMText,
   setAddLGTMText,
+  uploadCountUpdated = 0, // デフォルト値を設定
 }) => {
   const [imageUrl, setImageUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [remainingUploads, setRemainingUploads] = useState(DAILY_UPLOAD_LIMIT);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 残りのアップロード回数を更新（IPアドレスベース）
+  useEffect(() => {
+    async function fetchUploadLimits() {
+      setIsLoading(true);
+      try {
+        // IPアドレスベースでの制限をチェック
+        const { limitReached, currentCount, error } =
+          await checkUploadLimitByIp();
+
+        if (error) {
+          console.warn("IP limit check failed, using local storage:", error);
+          // エラー時はローカルストレージにフォールバック
+          setRemainingUploads(getRemainingUploads());
+        } else {
+          // 残りの回数を計算
+          setRemainingUploads(Math.max(0, DAILY_UPLOAD_LIMIT - currentCount));
+        }
+      } catch (err) {
+        console.error("Failed to check upload limits:", err);
+        // エラー時はローカルストレージにフォールバック
+        setRemainingUploads(getRemainingUploads());
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchUploadLimits();
+  }, [uploadCountUpdated]); // uploadCountUpdatedが変更されたときに残りのアップロード回数を再取得
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -57,6 +92,29 @@ const UploadForm: React.FC<UploadFormProps> = ({
         </div>
       )}
 
+      {/* 残りのアップロード回数表示 */}
+      <div className="mb-6 text-center">
+        {isLoading ? (
+          <p className="text-gray-400">アップロード制限を確認中...</p>
+        ) : (
+          <>
+            <p className="text-gray-400">
+              本日の残りアップロード回数:
+              <span
+                className={`ml-1 font-semibold ${
+                  remainingUploads > 0 ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {remainingUploads} / {DAILY_UPLOAD_LIMIT}
+              </span>
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              画像アップロード時にIPアドレスを取得しています
+            </p>
+          </>
+        )}
+      </div>
+
       <div className="grid md:grid-cols-2 gap-8">
         {/* ファイルアップロード */}
         <div className="border-2 border-dashed border-gray-600 rounded-lg p-8">
@@ -67,14 +125,23 @@ const UploadForm: React.FC<UploadFormProps> = ({
               onChange={handleImageUpload}
               className="hidden"
               id="imageInput"
+              disabled={remainingUploads <= 0 || isLoading}
             />
             <label
               htmlFor="imageInput"
-              className="cursor-pointer flex flex-col items-center space-y-4"
+              className={`cursor-pointer flex flex-col items-center space-y-4 ${
+                remainingUploads <= 0 || isLoading
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
             >
               <ImagePlus className="w-12 h-12 text-gray-400" />
               <span className="text-gray-400">
-                クリックしてアップロードするか、画像をドラッグ＆ドロップ
+                {isLoading
+                  ? "読み込み中..."
+                  : remainingUploads > 0
+                  ? "クリックしてアップロードするか、画像をドラッグ＆ドロップ"
+                  : "本日のアップロード上限に達しました"}
               </span>
             </label>
             <div className="flex items-center space-x-2">
@@ -106,6 +173,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder="画像のURLを入力"
                 className="w-full px-4 py-2 bg-gray-800 rounded border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                disabled={remainingUploads <= 0 || isLoading}
               />
               <div className="flex items-center space-x-2">
                 <input
@@ -121,9 +189,18 @@ const UploadForm: React.FC<UploadFormProps> = ({
               </div>
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition duration-200"
+                className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition duration-200 ${
+                  remainingUploads <= 0 || isLoading
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
+                disabled={remainingUploads <= 0 || isLoading}
               >
-                URLから生成
+                {isLoading
+                  ? "読み込み中..."
+                  : remainingUploads > 0
+                  ? "URLから生成"
+                  : "本日の上限に達しました"}
               </button>
             </div>
           </form>
