@@ -1,3 +1,5 @@
+import { MAX_FILE_SIZE } from "./constants";
+
 /**
  * 画像にLGTMテキストを追加する
  */
@@ -146,14 +148,36 @@ export function loadImageFromUrl(imageUrl: string): Promise<string> {
       img.src = corsProxyUrl;
 
       img.onload = () => {
-        resolve(corsProxyUrl);
+        // ファイルサイズの制限をチェック
+        fetch(corsProxyUrl)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("画像の取得に失敗しました");
+            }
+            return response.blob();
+          })
+          .then((blob) => {
+            if (blob.size > MAX_FILE_SIZE) {
+              const sizeMB = (blob.size / (1024 * 1024)).toFixed(1);
+              reject(
+                new Error(
+                  `画像サイズが大きすぎます（${sizeMB}MB）。5MB以下の画像を選択してください`
+                )
+              );
+            } else {
+              resolve(corsProxyUrl);
+            }
+          })
+          .catch((error) => {
+            reject(error);
+          });
       };
 
       img.onerror = () => {
-        reject(new Error("Failed to load image from URL"));
+        reject(new Error("URLから画像を読み込めませんでした"));
       };
     } catch (err) {
-      reject(new Error("Invalid URL or failed to load image"));
+      reject(new Error("無効なURLか、画像の読み込みに失敗しました"));
     }
   });
 }

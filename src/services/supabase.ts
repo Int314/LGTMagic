@@ -3,8 +3,8 @@ import {
   getUserId,
   incrementUploadCount,
   isUploadLimitReached,
-  DAILY_UPLOAD_LIMIT,
 } from "../utils/storageUtils";
+import { DAILY_UPLOAD_LIMIT } from "../utils/constants";
 import { getUserIpAddress } from "../utils/ipUtils";
 
 // Initialize Supabase client with proper types

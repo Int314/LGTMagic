@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { ImagePlus, Link as LinkIcon } from "lucide-react";
 import { loadImageFromUrl } from "../utils/imageUtils";
-import { getRemainingUploads, DAILY_UPLOAD_LIMIT } from "../utils/storageUtils";
+import { getRemainingUploads } from "../utils/storageUtils";
 import { checkUploadLimitByIp } from "../services/supabase";
+import { MAX_FILE_SIZE, DAILY_UPLOAD_LIMIT } from "../utils/constants";
 
 interface UploadFormProps {
   onImageSelected: (imageSource: string) => void;
@@ -56,18 +57,44 @@ const UploadForm: React.FC<UploadFormProps> = ({
     fetchUploadLimits();
   }, [uploadCountUpdated]); // uploadCountUpdatedが変更されたときに残りのアップロード回数を再取得
 
+  /**
+   * ファイルサイズをフォーマットして表示用の文字列を返す
+   */
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) {
+      return bytes + " B";
+    } else if (bytes < 1024 * 1024) {
+      return (bytes / 1024).toFixed(1) + " KB";
+    } else {
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+  };
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result;
-        if (typeof result === "string") {
-          onImageSelected(result);
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // ファイルサイズのチェック
+    if (file.size > MAX_FILE_SIZE) {
+      setError(
+        `ファイルサイズが大きすぎます。${formatFileSize(
+          file.size
+        )}は上限の5MBを超えています。`
+      );
+      return;
     }
+
+    // エラーをリセット
+    setError(null);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result;
+      if (typeof result === "string") {
+        onImageSelected(result);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleUrlSubmit = async (e: React.FormEvent) => {
