@@ -1,11 +1,14 @@
 import React, { useRef, useEffect } from "react";
-import { X, Share2, Copy, ExternalLink } from "lucide-react";
+import { X, Share2, Copy, ExternalLink, Trash2 } from "lucide-react";
 import { useLgtmClipboard } from "../hooks/useClipboard";
 import ReactDOM from "react-dom";
+import { supabase } from "../services/supabase";
 
 interface ImagePreviewModalProps {
   imageUrl: string;
   onClose: () => void;
+  isAdminMode?: boolean; // 管理者モードフラグを追加
+  onImageDeleted?: () => void; // 画像削除後のコールバック
 }
 
 /**
@@ -16,10 +19,14 @@ interface ImagePreviewModalProps {
 const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
   imageUrl,
   onClose,
+  isAdminMode = false, // デフォルト値は非管理者モード
+  onImageDeleted,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const modalContentRef = useRef<HTMLDivElement>(null);
   const { copySuccess, copyToClipboard, copyAsMarkdown } = useLgtmClipboard();
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   // モーダル表示時にアニメーションを適用
   useEffect(() => {
@@ -31,6 +38,71 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
   const handleModalClick = (e: React.MouseEvent) => {
     if (modalRef.current && e.target === modalRef.current) {
       onClose();
+    }
+  };
+
+  // 画像のパス部分を抽出する関数
+  const extractImagePath = (url: string): string | null => {
+    try {
+      // URLからファイル名を抽出
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split("/");
+      // ファイル名だけを取得（パスの最後の部分）
+      const fileName = pathParts[pathParts.length - 1];
+
+      // デバッグ情報をコンソールに出力
+      console.log("Image URL:", url);
+      console.log("Extracted file name:", fileName);
+
+      if (fileName) {
+        return fileName;
+      }
+      return null;
+    } catch (e) {
+      console.error("URLの解析に失敗しました:", e);
+      return null;
+    }
+  };
+
+  // 画像を削除する関数
+  const handleDeleteImage = async () => {
+    if (!isAdminMode || isDeleting) return;
+
+    const imagePath = extractImagePath(imageUrl);
+    if (!imagePath) {
+      setDeleteError("画像のパス情報を取得できませんでした");
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      setDeleteError(null);
+
+      // Supabaseストレージから画像を削除
+      const { error } = await supabase.storage
+        .from("lgtm-images")
+        .remove([imagePath]);
+
+      if (error) {
+        throw error;
+      }
+
+      // 削除が完了したら、モーダルを閉じる
+      onClose();
+
+      // 親コンポーネントに削除完了を通知
+      if (onImageDeleted) {
+        onImageDeleted();
+      }
+    } catch (err) {
+      console.error("画像の削除に失敗しました:", err);
+      setDeleteError(
+        err instanceof Error
+          ? `削除に失敗しました: ${err.message}`
+          : "画像の削除に失敗しました"
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -104,6 +176,13 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
           <div className="absolute bottom-0 left-1/4 w-1/2 h-1 bg-gradient-to-r from-transparent via-purple-400/70 to-transparent blur-sm"></div>
         </div>
 
+        {/* エラーメッセージ */}
+        {deleteError && (
+          <div className="mb-4 bg-red-500/10 border border-red-500/40 text-red-300 px-4 py-3 rounded-lg text-sm shadow-lg">
+            <p className="text-center">{deleteError}</p>
+          </div>
+        )}
+
         {/* アクションボタンコンテナ */}
         <div className="flex flex-col sm:flex-row justify-center gap-4">
           <button
@@ -131,6 +210,27 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
             <ExternalLink className="w-5 h-5" />
             新しいタブで開く
           </a>
+
+          {/* 管理者モードの場合のみ削除ボタンを表示 */}
+          {isAdminMode && (
+            <button
+              onClick={handleDeleteImage}
+              disabled={isDeleting}
+              className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-lg hover:shadow-lg transition duration-200 font-medium"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                  削除中...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-5 h-5" />
+                  画像を削除
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* 画像URLの表示 */}
