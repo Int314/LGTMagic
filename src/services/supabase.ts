@@ -201,7 +201,7 @@ export async function fetchGalleryImages(): Promise<{
 
 /**
  * 画像をSupabaseにアップロードする
- * アップロード回数制限のチェックを含む（Supabaseのみ使用）
+ * アップロード回数制限のチェックと不適切コンテンツのチェックを含む
  */
 export async function uploadImage(
   blob: Blob
@@ -219,6 +219,24 @@ export async function uploadImage(
         url: null,
         error: `セキュリティのため、1日のアップロード回数は${DAILY_UPLOAD_LIMIT}回までに制限されています。明日また試してください。`,
       };
+    }
+
+    // 不適切なコンテンツのチェック
+    try {
+      const { analyzeImageContent } = await import("../utils/imageUtils");
+      const { isAppropriate, reason } = await analyzeImageContent(blob);
+
+      if (!isAppropriate) {
+        return {
+          url: null,
+          error: `アップロードできません: ${
+            reason || "不適切な画像と判断されました"
+          }。ガイドラインに沿った画像を選択してください。`,
+        };
+      }
+    } catch (analyzeError) {
+      console.warn("Image content analysis failed:", analyzeError);
+      // 分析に失敗した場合は、アップロードを続行
     }
 
     // Get content type from blob
