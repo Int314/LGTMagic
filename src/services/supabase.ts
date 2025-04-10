@@ -3,6 +3,7 @@ import {
   getUserId,
   incrementUploadCount,
   isUploadLimitReached,
+  getRemainingUploads,
 } from "../utils/storageUtils";
 import { DAILY_UPLOAD_LIMIT } from "../utils/constants";
 import { getUserIpAddress } from "../utils/ipUtils";
@@ -15,6 +16,7 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
+// グローバルヘッダー設定は行わない（新しいバージョンでは動作が異なる）
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: false, // Since we don't need auth for this app
@@ -41,38 +43,22 @@ export async function checkUploadLimitByIp(): Promise<{
   error: string | null;
 }> {
   try {
-    const ipAddress = await getUserIpAddress();
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD形式
-
-    // 既存のレコードを検索
-    const { data, error } = await supabase
-      .from("upload_limits")
-      .select("upload_count")
-      .eq("ip_address", ipAddress)
-      .eq("upload_date", today)
-      .single();
-
-    if (error && error.code !== "PGRST116") {
-      // PGRST116は「レコードが見つからない」エラー
-      throw error;
-    }
-
-    // 現在のカウント（レコードがない場合は0）
-    const currentCount = data?.upload_count || 0;
+    // ローカルストレージの値を先に使用
+    const localRemaining = getRemainingUploads();
+    const currentCount = DAILY_UPLOAD_LIMIT - localRemaining;
 
     return {
-      limitReached: currentCount >= DAILY_UPLOAD_LIMIT,
+      limitReached: localRemaining <= 0,
       currentCount,
       error: null,
     };
   } catch (err) {
     console.error("Error checking upload limit:", err);
 
-    // エラーが発生しても、ユーザー体験を維持するためにローカルストレージにフォールバック
-    const isLimitReached = isUploadLimitReached();
+    // エラーが発生しても、ユーザー体験を維持するためにデフォルト値を返す
     return {
-      limitReached: isLimitReached,
-      currentCount: isLimitReached ? DAILY_UPLOAD_LIMIT : 0,
+      limitReached: false,
+      currentCount: 0,
       error:
         err instanceof Error
           ? err.message

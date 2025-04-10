@@ -125,39 +125,6 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
           </div>
         </div>
       </div>
-
-      {/* アニメーション用のスタイル */}
-      <style jsx global>{`
-        .modal-appear {
-          animation: modalFadeIn 0.3s ease forwards;
-        }
-
-        @keyframes modalFadeIn {
-          0% {
-            opacity: 0;
-            transform: scale(0.95) translateY(10px);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-
-        @keyframes fade-in-down {
-          0% {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in-down {
-          animation: fade-in-down 0.3s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 };
