@@ -1,108 +1,55 @@
 // ユーザーのアップロード回数を管理するためのユーティリティ
 import { DAILY_UPLOAD_LIMIT } from "./constants";
 
-// メモリ内のフォールバックストレージ（localStorageが使用できない環境用）
+// セッション中のみ有効なメモリ内のストレージ
+// localStorageは一切使用しない
 const memoryStorage: Record<string, string> = {};
 
-/**
- * ブラウザのlocalStorageが使用可能かチェック
- */
-function isLocalStorageAvailable(): boolean {
-  try {
-    const testKey = "__storage_test__";
-    localStorage.setItem(testKey, testKey);
-    localStorage.removeItem(testKey);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
+// セッション中に固定のユーザーIDを保持
+let sessionUserId: string | null = null;
 
 /**
- * 安全にlocalStorageから値を取得する
- * localStorageが利用できない場合はメモリ内ストレージから取得
- */
-function safeGetItem(key: string): string | null {
-  try {
-    if (isLocalStorageAvailable()) {
-      return localStorage.getItem(key);
-    }
-    return memoryStorage[key] || null;
-  } catch (e) {
-    console.warn("localStorage access failed, using memory fallback");
-    return memoryStorage[key] || null;
-  }
-}
-
-/**
- * 安全にlocalStorageに値を設定する
- * localStorageが利用できない場合はメモリ内ストレージに設定
- */
-function safeSetItem(key: string, value: string): void {
-  try {
-    if (isLocalStorageAvailable()) {
-      localStorage.setItem(key, value);
-    } else {
-      memoryStorage[key] = value;
-    }
-  } catch (e) {
-    console.warn("localStorage access failed, using memory fallback");
-    memoryStorage[key] = value;
-  }
-}
-
-/**
- * ユーザーを識別するためのローカルIDを取得または生成する
+ * ユーザーを識別するためのセッションIDを取得または生成する
+ * localStorageは使用せず、メモリ内でのみ保持する
  */
 export function getUserId(): string {
-  const storageKey = "lgtm-user-id";
-  let userId = safeGetItem(storageKey);
-
-  if (!userId) {
-    // ランダムなIDを生成
-    userId = `user_${Math.random().toString(36).substring(2, 15)}`;
-    safeSetItem(storageKey, userId);
+  if (!sessionUserId) {
+    // セッション用のランダムなIDを生成
+    sessionUserId = `session_${Math.random()
+      .toString(36)
+      .substring(2, 15)}_${Date.now()}`;
   }
-
-  return userId;
+  return sessionUserId;
 }
 
 /**
  * 本日のアップロード回数を取得する
+ * 注意: 実際のカウントはSupabaseで管理し、この関数は使用しない
  */
 export function getTodayUploads(): number {
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD形式
-  const storageKey = `lgtm-uploads-${today}`;
-
-  const count = safeGetItem(storageKey);
-  return count ? parseInt(count, 10) : 0;
+  return 0; // 常に0を返す（Supabaseベースのカウントを使用するため）
 }
 
 /**
  * アップロード回数をインクリメントする
+ * 注意: 実際のカウントはSupabaseで管理し、この関数は使用しない
  */
 export function incrementUploadCount(): number {
-  const today = new Date().toISOString().split("T")[0];
-  const storageKey = `lgtm-uploads-${today}`;
-
-  const currentCount = getTodayUploads();
-  const newCount = currentCount + 1;
-
-  safeSetItem(storageKey, newCount.toString());
-  return newCount;
+  return 0; // 何も行わない（Supabaseベースのカウントを使用するため）
 }
 
 /**
  * ユーザーが本日の制限を超えているかチェックする
+ * 注意: 実際のチェックはSupabaseで行い、この関数は使用しない
  */
 export function isUploadLimitReached(): boolean {
-  return getTodayUploads() >= DAILY_UPLOAD_LIMIT;
+  return false; // 常にfalseを返す（Supabaseベースのチェックを使用するため）
 }
 
 /**
  * 残りのアップロード可能回数を取得する
+ * 注意: 実際のカウントはSupabaseで管理し、この関数は使用しない
  */
 export function getRemainingUploads(): number {
-  const currentCount = getTodayUploads();
-  return Math.max(0, DAILY_UPLOAD_LIMIT - currentCount);
+  return DAILY_UPLOAD_LIMIT; // 常に最大値を返す（Supabaseベースのカウントを使用するため）
 }

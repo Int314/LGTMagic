@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ImagePlus, Link as LinkIcon } from "lucide-react";
 import { loadImageFromUrl } from "../utils/imageUtils";
-import { getRemainingUploads } from "../utils/storageUtils";
 import { checkUploadLimitByIp } from "../services/supabase";
 import { MAX_FILE_SIZE, DAILY_UPLOAD_LIMIT } from "../utils/constants";
 
@@ -33,22 +32,22 @@ const UploadForm: React.FC<UploadFormProps> = ({
     async function fetchUploadLimits() {
       setIsLoading(true);
       try {
-        // IPアドレスベースでの制限をチェック
+        // IPアドレスベースでの制限をチェック（Supabaseのみ）
         const { limitReached, currentCount, error } =
           await checkUploadLimitByIp();
 
         if (error) {
-          console.warn("IP limit check failed, using local storage:", error);
-          // エラー時はローカルストレージにフォールバック
-          setRemainingUploads(getRemainingUploads());
+          console.warn("IP limit check failed:", error);
+          // エラー時はデフォルトの制限を設定
+          setRemainingUploads(DAILY_UPLOAD_LIMIT);
         } else {
           // 残りの回数を計算
           setRemainingUploads(Math.max(0, DAILY_UPLOAD_LIMIT - currentCount));
         }
       } catch (err) {
         console.error("Failed to check upload limits:", err);
-        // エラー時はローカルストレージにフォールバック
-        setRemainingUploads(getRemainingUploads());
+        // エラー時はデフォルトの制限を設定
+        setRemainingUploads(DAILY_UPLOAD_LIMIT);
       } finally {
         setIsLoading(false);
       }

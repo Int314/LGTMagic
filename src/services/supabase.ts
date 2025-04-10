@@ -36,6 +36,7 @@ export interface StorageFile {
 /**
  * IPアドレスによるアップロード回数チェック
  * DBと連携して確認し、制限を超えていればtrueを返す
+ * ローカルストレージは使わず、Supabaseのみを信頼する
  */
 export async function checkUploadLimitByIp(): Promise<{
   limitReached: boolean;
@@ -43,19 +44,32 @@ export async function checkUploadLimitByIp(): Promise<{
   error: string | null;
 }> {
   try {
-    // ローカルストレージの値を先に使用
-    const localRemaining = getRemainingUploads();
-    const currentCount = DAILY_UPLOAD_LIMIT - localRemaining;
+    const ipAddress = await getUserIpAddress();
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD形式
+
+    // Supabaseからデータを取得
+    const { data, error } = await supabase
+      .from("upload_limits")
+      .select("upload_count")
+      .eq("ip_address", ipAddress)
+      .eq("upload_date", today)
+      .maybeSingle(); // single()の代わりにmaybeSingle()を使用
+
+    if (error) throw error;
+
+    // データが見つかった場合はその値を返す、見つからない場合は0を返す
+    const currentCount = data ? data.upload_count : 0;
 
     return {
-      limitReached: localRemaining <= 0,
+      limitReached: currentCount >= DAILY_UPLOAD_LIMIT,
       currentCount,
       error: null,
     };
   } catch (err) {
     console.error("Error checking upload limit:", err);
 
-    // エラーが発生しても、ユーザー体験を維持するためにデフォルト値を返す
+    // エラー発生時は制限に達していないと仮定して処理を続ける
+    // ローカルストレージのフォールバックは使用しない
     return {
       limitReached: false,
       currentCount: 0,
@@ -69,6 +83,7 @@ export async function checkUploadLimitByIp(): Promise<{
 
 /**
  * IPアドレスベースでアップロード回数をインクリメント
+ * ローカルストレージには保存せず、Supabaseのみを更新
  */
 export async function incrementUploadCountByIp(): Promise<{
   success: boolean;
@@ -85,7 +100,7 @@ export async function incrementUploadCountByIp(): Promise<{
       .select("upload_count")
       .eq("ip_address", ipAddress)
       .eq("upload_date", today)
-      .single();
+      .maybeSingle(); // single()の代わりにmaybeSingle()を使用
 
     let currentCount = 1;
 
@@ -120,8 +135,7 @@ export async function incrementUploadCountByIp(): Promise<{
       if (insertError) throw insertError;
     }
 
-    // ローカルストレージにも保存（フォールバック用）
-    incrementUploadCount();
+    // ローカルストレージへの保存は行わない
 
     return {
       success: true,
@@ -131,12 +145,10 @@ export async function incrementUploadCountByIp(): Promise<{
   } catch (err) {
     console.error("Error incrementing upload count:", err);
 
-    // エラー時はローカルストレージの値を使用
-    const localCount = incrementUploadCount();
-
+    // エラー時も、ローカルストレージへのフォールバックは行わない
     return {
       success: false,
-      currentCount: localCount,
+      currentCount: 0,
       error:
         err instanceof Error
           ? err.message
@@ -189,7 +201,7 @@ export async function fetchGalleryImages(): Promise<{
 
 /**
  * 画像をSupabaseにアップロードする
- * アップロード回数制限のチェックを含む
+ * アップロード回数制限のチェックを含む（Supabaseのみ使用）
  */
 export async function uploadImage(
   blob: Blob
@@ -199,17 +211,9 @@ export async function uploadImage(
     const { limitReached, error: limitError } = await checkUploadLimitByIp();
 
     if (limitError) {
-      console.warn(
-        "Upload limit check failed, falling back to local storage:",
-        limitError
-      );
-      // エラー発生時はローカルストレージの判定にフォールバック
-      if (isUploadLimitReached()) {
-        return {
-          url: null,
-          error: `セキュリティのため、1日のアップロード回数は${DAILY_UPLOAD_LIMIT}回までに制限されています。明日また試してください。`,
-        };
-      }
+      console.warn("Upload limit check failed:", limitError);
+      // エラー時はアップロードを許可する
+      // ローカルストレージにはフォールバックしない
     } else if (limitReached) {
       return {
         url: null,
