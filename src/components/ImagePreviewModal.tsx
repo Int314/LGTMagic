@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { X, Share2, Copy, ExternalLink } from "lucide-react";
 import { useLgtmClipboard } from "../hooks/useClipboard";
+import ReactDOM from "react-dom";
 
 interface ImagePreviewModalProps {
   imageUrl: string;
@@ -9,6 +10,8 @@ interface ImagePreviewModalProps {
 
 /**
  * 画像プレビュー用のモーダルコンポーネント
+ * ReactDOMのポータルを使用して、DOMのルートレベルにレンダリングし、
+ * position:fixedの問題を回避します
  */
 const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
   imageUrl,
@@ -31,10 +34,21 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
     }
   };
 
-  return (
+  // モーダルの内容
+  const modalContent = (
     <div
       ref={modalRef}
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9000]"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: "100vw",
+        height: "100vh",
+        padding: "1rem",
+      }}
       onClick={handleModalClick}
     >
       {/* 成功メッセージのフロート通知 */}
@@ -60,6 +74,7 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
       <div
         ref={modalContentRef}
         className="relative bg-gradient-to-br from-gray-900 to-slate-800 rounded-2xl p-6 max-w-3xl w-full border border-gray-700/50 shadow-2xl"
+        style={{ maxHeight: "90vh", overflowY: "auto" }}
       >
         {/* 閉じるボタン */}
         <button
@@ -80,7 +95,8 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
             src={imageUrl}
             alt="LGTM Preview"
             className="w-full object-contain rounded-lg z-10 relative"
-            style={{ maxHeight: "70vh", minHeight: "300px" }}
+            style={{ maxHeight: "60vh", minHeight: "250px" }}
+            loading="eager"
           />
 
           {/* 装飾的な光の効果 */}
@@ -120,13 +136,16 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
         {/* 画像URLの表示 */}
         <div className="mt-6 text-center">
           <p className="text-gray-400 text-sm mb-2">画像URL:</p>
-          <div className="bg-gray-800 rounded-lg px-4 py-2 text-gray-300 text-sm font-mono break-all border border-gray-700">
+          <div className="bg-gray-800 rounded-lg px-4 py-3 text-gray-300 text-sm font-mono break-all border border-gray-700">
             {imageUrl}
           </div>
         </div>
       </div>
     </div>
   );
+
+  // ReactDOM.createPortalを使用してモーダルをbodyの直下にレンダリング
+  return ReactDOM.createPortal(modalContent, document.body);
 };
 
 export default ImagePreviewModal;
