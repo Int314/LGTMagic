@@ -13,6 +13,7 @@ function App() {
   const [addLGTMText, setAddLGTMText] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [uploadCountUpdated, setUploadCountUpdated] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // ギャラリー画像を読み込む
   useEffect(() => {
@@ -83,6 +84,7 @@ function App() {
             addLGTMText={addLGTMText}
             setAddLGTMText={setAddLGTMText}
             uploadCountUpdated={uploadCountUpdated}
+            isGenerating={isGenerating}
           />
         </div>
 
@@ -117,6 +119,8 @@ function App() {
               onImageUploaded={loadGalleryImages}
               onUploadCountUpdated={handleUploadCountUpdated}
               setSelectedImage={setSelectedImage}
+              onGenerateStart={() => setIsGenerating(true)}
+              onGenerateEnd={() => setIsGenerating(false)}
             />
           </div>
         </div>

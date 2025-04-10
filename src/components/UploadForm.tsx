@@ -9,6 +9,7 @@ interface UploadFormProps {
   addLGTMText: boolean;
   setAddLGTMText: (value: boolean) => void;
   uploadCountUpdated?: number; // アップロード回数更新時に親コンポーネントから渡される値
+  isGenerating?: boolean; // 画像生成中のフラグを追加
 }
 
 /**
@@ -20,6 +21,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
   addLGTMText,
   setAddLGTMText,
   uploadCountUpdated = 0, // デフォルト値を設定
+  isGenerating = false, // デフォルト値を設定
 }) => {
   const [imageUrl, setImageUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +122,16 @@ const UploadForm: React.FC<UploadFormProps> = ({
         </h2>
       </div>
 
+      {/* 画像生成中の表示 */}
+      {isGenerating && (
+        <div className="bg-indigo-600/30 border-2 border-indigo-500/70 text-indigo-200 px-4 py-4 rounded-lg shadow-lg backdrop-blur-sm animate-pulse">
+          <div className="flex items-center justify-center space-x-3">
+            <div className="animate-spin h-6 w-6 border-2 border-indigo-300 border-t-transparent rounded-full"></div>
+            <p className="text-center font-semibold text-base">画像生成中...</p>
+          </div>
+        </div>
+      )}
+
       {/* エラーメッセージ */}
       {error && (
         <div className="bg-red-500/10 border border-red-500/40 text-red-300 px-4 py-3 rounded-lg text-sm shadow-lg backdrop-blur-sm animate-pulse">
@@ -179,12 +191,12 @@ const UploadForm: React.FC<UploadFormProps> = ({
                 onChange={handleImageUpload}
                 className="hidden"
                 id="imageInput"
-                disabled={remainingUploads <= 0 || isLoading}
+                disabled={remainingUploads <= 0 || isLoading || isGenerating}
               />
               <label
                 htmlFor="imageInput"
                 className={`cursor-pointer flex flex-col items-center space-y-4 w-full ${
-                  remainingUploads <= 0 || isLoading
+                  remainingUploads <= 0 || isLoading || isGenerating
                     ? "opacity-50 cursor-not-allowed"
                     : "hover:scale-105 transition-transform"
                 }`}
@@ -196,6 +208,8 @@ const UploadForm: React.FC<UploadFormProps> = ({
                   <span className="text-indigo-300 font-medium block">
                     {isLoading
                       ? "読み込み中..."
+                      : isGenerating
+                      ? "画像生成中..."
                       : remainingUploads > 0
                       ? "クリックして画像を選択"
                       : "本日の上限に達しました"}
@@ -227,19 +241,29 @@ const UploadForm: React.FC<UploadFormProps> = ({
                   onChange={(e) => setImageUrl(e.target.value)}
                   placeholder="画像のURLを入力"
                   className="w-full px-4 py-3 bg-gray-800/80 rounded-lg border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  disabled={remainingUploads <= 0 || isLoading}
+                  disabled={remainingUploads <= 0 || isLoading || isGenerating}
                 />
                 <button
                   type="submit"
                   className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg ${
-                    remainingUploads <= 0 || isLoading || !imageUrl
+                    remainingUploads <= 0 ||
+                    isLoading ||
+                    !imageUrl ||
+                    isGenerating
                       ? "opacity-50 cursor-not-allowed"
                       : ""
                   }`}
-                  disabled={remainingUploads <= 0 || isLoading || !imageUrl}
+                  disabled={
+                    remainingUploads <= 0 ||
+                    isLoading ||
+                    !imageUrl ||
+                    isGenerating
+                  }
                 >
                   {isLoading
                     ? "読み込み中..."
+                    : isGenerating
+                    ? "画像生成中..."
                     : remainingUploads > 0
                     ? "URLから生成"
                     : "本日の上限に達しました"}

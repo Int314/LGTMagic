@@ -3,12 +3,16 @@ import { generateLGTMImage, canvasToBlob } from "../utils/imageUtils";
 import { uploadImage } from "../services/supabase";
 import { getRemainingUploads } from "../utils/storageUtils";
 
+// 必要なコールバック関数のインターフェースは残す
 interface ImageGeneratorProps {
   selectedImage: string | null;
   addLGTMText: boolean;
-  onImageUploaded?: () => void;
-  onUploadCountUpdated?: () => void;
-  setSelectedImage?: (image: string | null) => void; // 親コンポーネントから渡されるsetSelectedImage関数
+  onImageUploaded: () => void;
+  onUploadCountUpdated: () => void;
+  setSelectedImage: (image: string | null) => void;
+  // 新しいコールバックプロパティを追加
+  onGenerateStart?: () => void;
+  onGenerateEnd?: () => void;
 }
 
 /**
@@ -20,6 +24,8 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   onImageUploaded,
   onUploadCountUpdated,
   setSelectedImage,
+  onGenerateStart,
+  onGenerateEnd,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -48,6 +54,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     if (!selectedImage || !canvasRef.current) return;
 
     setIsGenerating(true);
+    if (onGenerateStart) onGenerateStart(); // 親コンポーネントに生成開始を通知
     setError(null);
 
     try {
@@ -58,6 +65,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       setError(err instanceof Error ? err.message : "画像の生成に失敗しました");
     } finally {
       setIsGenerating(false);
+      if (onGenerateEnd) onGenerateEnd(); // 親コンポーネントに生成終了を通知
     }
   };
 
@@ -123,15 +131,6 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
           </div>
         )}
       </div>
-
-      {(isGenerating || isUploading) && (
-        <div className="flex items-center justify-center gap-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-          <span className="text-gray-300">
-            {isGenerating ? "画像生成中..." : "画像アップロード中..."}
-          </span>
-        </div>
-      )}
     </div>
   );
 };
