@@ -1,4 +1,5 @@
 import { MAX_FILE_SIZE } from "./constants";
+import { supabase } from "../services/supabase";
 
 /**
  * 画像にLGTMテキストを追加する
@@ -207,81 +208,26 @@ export async function analyzeImageContent(imageBlob: Blob): Promise<{
   reason: string | null;
 }> {
   try {
-    // ここでは例としてGoogle Cloud Vision APIを使用する実装を示しています
-    // 実際には適切なAPIキーと環境変数の設定が必要です
-    const apiKey = import.meta.env.VITE_GOOGLE_VISION_API_KEY;
+    // BlobをBase64に変換
+    const base64Image = await blobToBase64(imageBlob);
 
-    if (!apiKey) {
-      console.warn(
-        "Google Vision API key not configured, skipping content analysis"
-      );
+    // Supabase Edge Functionを呼び出す
+    const { data, error } = await supabase.functions.invoke("analyze-image", {
+      body: { image: base64Image },
+    });
+
+    // エラーチェック
+    if (error) {
+      console.error("Edge Function呼び出しエラー:", error);
+      // エラーの場合は安全のためtrueを返す
       return { isAppropriate: true, reason: null };
     }
 
-    // 画像をbase64エンコード
-    const base64Image = await blobToBase64(imageBlob);
-
-    // Vision APIリクエスト用のペイロード作成
-    const requestBody = {
-      requests: [
-        {
-          image: {
-            content: base64Image.split(",")[1], // base64のdata:image部分を削除
-          },
-          features: [
-            {
-              type: "SAFE_SEARCH_DETECTION",
-              maxResults: 1,
-            },
-          ],
-        },
-      ],
+    // レスポンスデータを返す
+    return {
+      isAppropriate: data.isAppropriate,
+      reason: data.reason,
     };
-
-    // APIリクエスト送信
-    const response = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      }
-    );
-
-    const result = await response.json();
-
-    // 不適切コンテンツの検出ロジック
-    if (
-      result.responses &&
-      result.responses[0] &&
-      result.responses[0].safeSearchAnnotation
-    ) {
-      const { adult, violence, racy, medical } =
-        result.responses[0].safeSearchAnnotation;
-
-      // LIKELYまたはVERY_LIKELYの場合にブロック
-      if (
-        adult === "LIKELY" ||
-        adult === "VERY_LIKELY" ||
-        violence === "LIKELY" ||
-        violence === "VERY_LIKELY" ||
-        racy === "VERY_LIKELY"
-      ) {
-        let reason = "";
-
-        if (adult === "LIKELY" || adult === "VERY_LIKELY")
-          reason = "アダルトコンテンツ";
-        else if (violence === "LIKELY" || violence === "VERY_LIKELY")
-          reason = "暴力的コンテンツ";
-        else if (racy === "VERY_LIKELY") reason = "不適切なコンテンツ";
-
-        return { isAppropriate: false, reason };
-      }
-    }
-
-    return { isAppropriate: true, reason: null };
   } catch (error) {
     console.error("画像分析中にエラーが発生しました:", error);
     // エラーの場合は安全のためtrueを返し、別の方法で検証
