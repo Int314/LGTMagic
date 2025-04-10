@@ -252,9 +252,11 @@ const UploadForm: React.FC<UploadFormProps> = ({
       </div>
 
       {/* IPアドレス取得の説明 */}
-      <div className="text-center">
+      <div className="text-left">
         <p className="text-xs text-gray-500">
-          画像アップロード時にIPアドレスを取得します
+          ・画像アップロード時にIPアドレスを取得します
+          <br />
+          ・気分によっては画像を予告なく削除することもあります
         </p>
       </div>
 
