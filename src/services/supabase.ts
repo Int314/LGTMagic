@@ -1,12 +1,7 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import {
-  getUserId,
-  incrementUploadCount,
-  isUploadLimitReached,
-  getRemainingUploads,
-} from "../utils/storageUtils";
+import { getUserId } from "../utils/storageUtils";
 import { DAILY_UPLOAD_LIMIT } from "../utils/constants";
 import { getUserIpAddress } from "../utils/ipUtils";
 
@@ -22,6 +17,7 @@ function isValidURL(urlString: string): boolean {
     new URL(urlString);
     return true;
   } catch (e) {
+    console.error("無効なURL:", urlString, e);
     return false;
   }
 }
@@ -323,7 +319,7 @@ export async function uploadImage(
     // Upload to Supabase Storage with public access
     const userId = getUserId();
     const fileName = `lgtm-${userId}-${Date.now()}.${fileExtension}`;
-    const { data, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from("lgtm-images")
       .upload(fileName, blob, {
         contentType,

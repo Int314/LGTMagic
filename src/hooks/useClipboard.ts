@@ -15,7 +15,7 @@ interface UseClipboardReturn {
   /**
    * テキストをクリップボードにコピーする関数
    */
-  copyToClipboard: (text: string) => Promise<void>;
+  copyToClipboard: (content: string) => Promise<void>;
 }
 
 /**
@@ -27,9 +27,9 @@ export function useClipboard(
   const { timeout = 2000 } = options;
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
 
-  const copyToClipboard = async (text: string): Promise<void> => {
+  const copyToClipboard = async (content: string): Promise<void> => {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(content);
       setCopySuccess("コピーしました！");
       setTimeout(() => setCopySuccess(null), timeout);
     } catch (err) {
@@ -52,9 +52,9 @@ export function useLgtmClipboard(
   const { timeout = 2000 } = options;
   const [copySuccess, setCopySuccess] = useState<string | null>(null);
 
-  const copyToClipboard = async (url: string): Promise<void> => {
+  const copyToClipboard = async (imageUrl: string): Promise<void> => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(imageUrl);
       setCopySuccess("URLをコピーしました！");
       setTimeout(() => setCopySuccess(null), timeout);
     } catch (err) {
@@ -63,9 +63,9 @@ export function useLgtmClipboard(
     }
   };
 
-  const copyAsMarkdown = async (url: string): Promise<void> => {
+  const copyAsMarkdown = async (imageUrl: string): Promise<void> => {
     try {
-      const markdown = `![LGTM](${url})`;
+      const markdown = `![LGTM](${imageUrl})`;
       await navigator.clipboard.writeText(markdown);
       setCopySuccess("Markdownをコピーしました！");
       setTimeout(() => setCopySuccess(null), timeout);

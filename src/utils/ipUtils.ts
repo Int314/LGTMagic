@@ -31,6 +31,7 @@ function getOrCreateAnonymousId(): string {
 
     return anonymousId;
   } catch (e) {
+    console.error("ローカルストレージの取得に失敗:", e);
     // ローカルストレージが使用できない場合は一時的なIDを返す
     return `temp_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
   }

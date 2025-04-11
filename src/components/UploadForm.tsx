@@ -5,11 +5,11 @@ import { checkUploadLimitByIp } from "../services/supabase";
 import { MAX_FILE_SIZE, DAILY_UPLOAD_LIMIT } from "../utils/constants";
 
 interface UploadFormProps {
-  onImageSelected: (imageSource: string) => void;
+  onImageSelected: (image: string) => void;
   addLGTMText: boolean;
   setAddLGTMText: (value: boolean) => void;
-  uploadCountUpdated?: number; // アップロード回数更新時に親コンポーネントから渡される値
-  isGenerating?: boolean; // 画像生成中のフラグを追加
+  uploadCountUpdated?: number;
+  isGenerating?: boolean;
 }
 
 /**
@@ -35,8 +35,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
       setIsLoading(true);
       try {
         // IPアドレスベースでの制限をチェック（Supabaseのみ）
-        const { limitReached, currentCount, error } =
-          await checkUploadLimitByIp();
+        const { currentCount, error } = await checkUploadLimitByIp();
 
         if (error) {
           console.warn("IP limit check failed:", error);

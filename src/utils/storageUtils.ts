@@ -1,10 +1,6 @@
 // ユーザーのアップロード回数を管理するためのユーティリティ
 import { DAILY_UPLOAD_LIMIT } from "./constants";
 
-// セッション中のみ有効なメモリ内のストレージ
-// localStorageは一切使用しない
-const memoryStorage: Record<string, string> = {};
-
 // セッション中に固定のユーザーIDを保持
 let sessionUserId: string | null = null;
 

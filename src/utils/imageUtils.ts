@@ -177,7 +177,8 @@ export function loadImageFromUrl(imageUrl: string): Promise<string> {
       img.onerror = () => {
         reject(new Error("URLから画像を読み込めませんでした"));
       };
-    } catch (err) {
+    } catch (e) {
+      console.error("URLの解析に失敗:", e);
       reject(new Error("無効なURLか、画像の読み込みに失敗しました"));
     }
   });
@@ -240,7 +241,7 @@ function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
+    reader.onerror = (error) => reject(error);
     reader.readAsDataURL(blob);
   });
 }

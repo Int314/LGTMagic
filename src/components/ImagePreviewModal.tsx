@@ -5,6 +5,7 @@ import { X, Share2, Copy, ExternalLink, Trash2 } from "lucide-react";
 import { useLgtmClipboard } from "../hooks/useClipboard";
 import ReactDOM from "react-dom";
 import { supabase } from "../services/supabase";
+import Image from "next/image";
 
 interface ImagePreviewModalProps {
   imageUrl: string;
@@ -165,12 +166,14 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
           <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 via-transparent to-purple-500/10 z-0"></div>
 
           {/* 画像 */}
-          <img
+          <Image
             src={imageUrl}
             alt="LGTM Preview"
             className="w-full object-contain rounded-lg z-10 relative"
             style={{ maxHeight: "60vh", minHeight: "250px" }}
-            loading="eager"
+            width={800}
+            height={600}
+            priority
           />
 
           {/* 装飾的な光の効果 */}

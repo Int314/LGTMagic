@@ -14,4 +14,5 @@ const nextConfig = {
   },
 };
 
+// ESモジュール形式からCommonJS形式に戻す
 module.exports = nextConfig;

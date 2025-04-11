@@ -11,7 +11,6 @@
 export async function secureHash(str: string): Promise<string> {
   // テキストエンコーダを使用して文字列をバイトに変換
   const encoder = new TextEncoder();
-  const data = encoder.encode(str);
 
   // ソルトを追加してセキュリティを高める（ソルトはここでは固定値を使用）
   // 注: 実際の実装ではユーザーごとに異なるソルトを使用することが望ましい
@@ -41,8 +40,5 @@ export async function verifyPassword(
   storedHash: string
 ): Promise<boolean> {
   const inputHash = await secureHash(inputPassword);
-  console.log("Input Password:", inputPassword);
-  console.log("Input Hash:", inputHash);
-  console.log("Stored Hash:", storedHash);
   return inputHash === storedHash;
 }

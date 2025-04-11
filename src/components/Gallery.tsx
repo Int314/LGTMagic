@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { Trash2 } from "lucide-react";
 import { supabase } from "../services/supabase";
+import Image from "next/image";
 
 interface GalleryProps {
   isLoading?: boolean;
@@ -111,11 +112,13 @@ const Gallery: React.FC<GalleryProps> = ({
             >
               {/* 画像コンテナ - 固定サイズコンテナを使用 */}
               <div className="w-full h-64 overflow-hidden rounded-t-xl">
-                <img
+                <Image
                   src={url}
                   alt={`LGTM ${index + 1}`}
                   className="w-full h-full object-cover transition-transform duration-300 ease-out will-change-transform transform-gpu group-hover:scale-105"
                   style={{ transformOrigin: "center center" }}
+                  width={400}
+                  height={300}
                   loading="lazy"
                 />
               </div>

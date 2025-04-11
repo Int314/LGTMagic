@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { generateLGTMImage, canvasToBlob } from "../utils/imageUtils";
 import { uploadImage } from "../services/supabase";
-import { getRemainingUploads } from "../utils/storageUtils";
 
 // 必要なコールバック関数のインターフェースは残す
 interface ImageGeneratorProps {
@@ -39,39 +38,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const imageFormat = "image/webp";
   const imageQuality = 0.8;
 
-  // 画像が選択されたらLGTM画像を生成
-  useEffect(() => {
-    // 新しい画像が選択された場合、または画像が変わった場合のみ処理を実行
-    if (
-      selectedImage &&
-      selectedImage !== processedImage &&
-      canvasRef.current
-    ) {
-      setProcessedImage(selectedImage); // 現在処理中の画像を記録
-      generateImage();
-    }
-  }, [selectedImage, addLGTMText]);
-
-  const generateImage = async () => {
-    if (!selectedImage || !canvasRef.current) return;
-
-    setIsGenerating(true);
-    if (onGenerateStart) onGenerateStart(); // 親コンポーネントに生成開始を通知
-    setError(null);
-
-    try {
-      await generateLGTMImage(canvasRef.current, selectedImage, addLGTMText);
-      await uploadGeneratedImage();
-    } catch (err) {
-      console.error("Error generating image:", err);
-      setError(err instanceof Error ? err.message : "画像の生成に失敗しました");
-    } finally {
-      setIsGenerating(false);
-      if (onGenerateEnd) onGenerateEnd(); // 親コンポーネントに生成終了を通知
-    }
-  };
-
-  const uploadGeneratedImage = async () => {
+  const uploadGeneratedImage = useCallback(async () => {
     if (!canvasRef.current) return;
 
     setIsUploading(true);
@@ -110,7 +77,54 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [
+    canvasRef,
+    imageFormat,
+    imageQuality,
+    onImageUploaded,
+    onUploadCountUpdated,
+    setProcessedImage,
+    setSelectedImage,
+  ]);
+
+  const generateImage = useCallback(async () => {
+    if (!selectedImage || !canvasRef.current) return;
+
+    setIsGenerating(true);
+    if (onGenerateStart) onGenerateStart(); // 親コンポーネントに生成開始を通知
+    setError(null);
+
+    try {
+      await generateLGTMImage(canvasRef.current, selectedImage, addLGTMText);
+      await uploadGeneratedImage();
+    } catch (err) {
+      console.error("Error generating image:", err);
+      setError(err instanceof Error ? err.message : "画像の生成に失敗しました");
+    } finally {
+      setIsGenerating(false);
+      if (onGenerateEnd) onGenerateEnd(); // 親コンポーネントに生成終了を通知
+    }
+  }, [
+    selectedImage,
+    canvasRef,
+    addLGTMText,
+    onGenerateStart,
+    onGenerateEnd,
+    uploadGeneratedImage,
+  ]);
+
+  // 画像が選択されたらLGTM画像を生成
+  useEffect(() => {
+    // 新しい画像が選択された場合、または画像が変わった場合のみ処理を実行
+    if (
+      selectedImage &&
+      selectedImage !== processedImage &&
+      canvasRef.current
+    ) {
+      setProcessedImage(selectedImage); // 現在処理中の画像を記録
+      generateImage();
+    }
+  }, [selectedImage, addLGTMText, processedImage, generateImage]);
 
   if (!selectedImage) {
     return null;

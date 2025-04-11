@@ -4,9 +4,9 @@ import ReactDOM from "react-dom";
 
 interface AdminPasswordModalProps {
   onClose: () => void;
-  onVerify: (password: string) => void; // onSubmitをonVerifyに変更
+  onVerify: (password: string) => void;
   error?: string | null;
-  isVerifying?: boolean; // パスワード検証中フラグを追加
+  isVerifying?: boolean;
 }
 
 /**

@@ -18,11 +18,10 @@ function App() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [addLGTMText, setAddLGTMText] = useState(true);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [uploadCountUpdated, setUploadCountUpdated] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [addLGTMText, setAddLGTMText] = useState(true);
 
   // 管理者モード関連のフックを使用
   const {
@@ -41,13 +40,11 @@ function App() {
   useEffect(() => {
     const loadImages = async () => {
       setIsLoading(true);
-      setError(null);
       try {
         const images = await fetchGalleryImages();
         setGalleryImages(images);
       } catch (err) {
         console.error("Error fetching gallery images:", err);
-        setError("ギャラリーの読み込みに失敗しました");
       } finally {
         setIsLoading(false);
       }
