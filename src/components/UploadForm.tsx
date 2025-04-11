@@ -279,7 +279,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
         <p className="text-xs text-gray-500">
           ・画像アップロード時にIPアドレスを取得します
           <br />
-          ・気分によっては画像を予告なく削除することもあります
+          ・運営者の気分によって画像を削除することがあります
         </p>
       </div>
 

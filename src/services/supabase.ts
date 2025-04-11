@@ -1,3 +1,5 @@
+"use client";
+
 import { createClient } from "@supabase/supabase-js";
 import {
   getUserId,
@@ -8,20 +10,102 @@ import {
 import { DAILY_UPLOAD_LIMIT } from "../utils/constants";
 import { getUserIpAddress } from "../utils/ipUtils";
 
-// Initialize Supabase client with proper types
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Supabaseクライアント
+let supabaseClient: any;
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Missing Supabase environment variables");
+// ブラウザ環境か確認
+const isBrowser = typeof window !== "undefined";
+
+// URLが有効か検証する関数
+function isValidURL(urlString: string): boolean {
+  try {
+    new URL(urlString);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
-// グローバルヘッダー設定は行わない（新しいバージョンでは動作が異なる）
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: false, // Since we don't need auth for this app
-  },
-});
+// Supabaseクライアントの初期化
+if (isBrowser) {
+  try {
+    // 環境変数からURL設定を取得
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    // 環境変数チェック
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error(
+        "環境変数が設定されていません。.env.localファイルを確認してください。"
+      );
+    }
+
+    // URL検証
+    if (!isValidURL(supabaseUrl)) {
+      console.error("❌ 無効なSupabase URL:", supabaseUrl);
+      throw new Error("無効なSupabase URL");
+    }
+
+    console.log("🔌 Supabaseに接続:", supabaseUrl);
+    console.log("🔑 APIキーの長さ:", supabaseKey?.length || 0);
+
+    // クライアントを生成
+    supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+      },
+    });
+
+    // 接続テスト
+    console.log("✅ Supabaseクライアント初期化成功");
+  } catch (error) {
+    console.error("🔴 Supabaseクライアント初期化エラー:", error);
+
+    // エラー発生時は簡易スタブを提供
+    supabaseClient = {
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({ data: null, error: null }),
+            }),
+          }),
+        }),
+        insert: () => Promise.resolve({ error: null }),
+        update: () => ({
+          eq: () => ({
+            eq: () => Promise.resolve({ error: null }),
+          }),
+        }),
+      }),
+      storage: {
+        from: () => ({
+          list: () => Promise.resolve({ data: [], error: null }),
+          getPublicUrl: () => ({ data: { publicUrl: "" } }),
+          upload: () => Promise.resolve({ data: null, error: null }),
+          remove: () => Promise.resolve({ error: null }),
+        }),
+      },
+    };
+
+    console.warn("⚠️ Supabase接続エラー - スタブを使用します");
+  }
+} else {
+  // サーバーサイドレンダリング時の簡易スタブ
+  supabaseClient = {
+    from: () => ({ select: () => {}, update: () => {}, insert: () => {} }),
+    storage: {
+      from: () => ({
+        list: () => {},
+        getPublicUrl: () => {},
+        upload: () => {},
+      }),
+    },
+  };
+}
+
+// エクスポートするクライアント
+export const supabase = supabaseClient;
 
 // Type for storage data
 export interface StorageFile {
@@ -36,7 +120,6 @@ export interface StorageFile {
 /**
  * IPアドレスによるアップロード回数チェック
  * DBと連携して確認し、制限を超えていればtrueを返す
- * ローカルストレージは使わず、Supabaseのみを信頼する
  */
 export async function checkUploadLimitByIp(): Promise<{
   limitReached: boolean;
@@ -69,7 +152,6 @@ export async function checkUploadLimitByIp(): Promise<{
     console.error("Error checking upload limit:", err);
 
     // エラー発生時は制限に達していないと仮定して処理を続ける
-    // ローカルストレージのフォールバックは使用しない
     return {
       limitReached: false,
       currentCount: 0,
@@ -135,8 +217,6 @@ export async function incrementUploadCountByIp(): Promise<{
       if (insertError) throw insertError;
     }
 
-    // ローカルストレージへの保存は行わない
-
     return {
       success: true,
       currentCount,
@@ -145,7 +225,6 @@ export async function incrementUploadCountByIp(): Promise<{
   } catch (err) {
     console.error("Error incrementing upload count:", err);
 
-    // エラー時も、ローカルストレージへのフォールバックは行わない
     return {
       success: false,
       currentCount: 0,
@@ -160,10 +239,7 @@ export async function incrementUploadCountByIp(): Promise<{
 /**
  * 画像ギャラリーを取得する
  */
-export async function fetchGalleryImages(): Promise<{
-  imageUrls: string[];
-  error: string | null;
-}> {
+export async function fetchGalleryImages(): Promise<string[]> {
   try {
     const { data: files, error: listError } = await supabase.storage
       .from("lgtm-images")
@@ -189,13 +265,10 @@ export async function fetchGalleryImages(): Promise<{
       return publicUrl;
     });
 
-    return { imageUrls, error: null };
+    return imageUrls;
   } catch (err) {
     console.error("Error fetching images:", err);
-    return {
-      imageUrls: [],
-      error: err instanceof Error ? err.message : "Failed to fetch images",
-    };
+    return [];
   }
 }
 
@@ -212,8 +285,6 @@ export async function uploadImage(
 
     if (limitError) {
       console.warn("Upload limit check failed:", limitError);
-      // エラー時はアップロードを許可する
-      // ローカルストレージにはフォールバックしない
     } else if (limitReached) {
       return {
         url: null,
@@ -236,7 +307,6 @@ export async function uploadImage(
       }
     } catch (analyzeError) {
       console.warn("Image content analysis failed:", analyzeError);
-      // 分析に失敗した場合は、アップロードを続行
     }
 
     // Get content type from blob

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import Gallery from "./components/Gallery";
 import ImagePreviewModal from "./components/ImagePreviewModal";
@@ -7,15 +9,10 @@ import AdminPasswordModal from "./components/AdminPasswordModal";
 import { fetchGalleryImages } from "./services/supabase";
 import { useAdminMode } from "./hooks/useAdminMode";
 import { ShieldCheck, ShieldOff } from "lucide-react";
-import { secureHash } from "./utils/passwordUtils";
+import { useClipboard } from "./hooks/useClipboard";
 
 // 管理者パスワードをハッシュ化して環境変数から取得
-// デフォルトハッシュは環境変数がない場合のフォールバック
-// 'lgtm-admin-2025'の安全なSHA-256ハッシュ値
-const DEFAULT_HASHED_PASSWORD =
-  "5e37528bf76dff3089abcf940f4a927703aa9d446ea25b8acacdcbe0d912d028";
-const HASHED_ADMIN_PASSWORD =
-  import.meta.env.VITE_ADMIN_PASSWORD_HASH || DEFAULT_HASHED_PASSWORD;
+const HASHED_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD_HASH;
 
 function App() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -35,191 +32,163 @@ function App() {
     toggleAdminMode,
     verifyPassword,
     closePasswordModal,
-    isVerifying, // 検証中状態を取得
+    isVerifying,
   } = useAdminMode(HASHED_ADMIN_PASSWORD);
+
+  const { copyToClipboard, showCopySuccess } = useClipboard();
 
   // ギャラリー画像を読み込む
   useEffect(() => {
-    loadGalleryImages();
-  }, []);
-
-  // Escキーでモーダルを閉じる
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && previewImage) {
-        setPreviewImage(null);
+    const loadImages = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const images = await fetchGalleryImages();
+        setGalleryImages(images);
+      } catch (err) {
+        console.error("Error fetching gallery images:", err);
+        setError("ギャラリーの読み込みに失敗しました");
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [previewImage]);
+    loadImages();
+  }, [uploadCountUpdated]);
 
-  // ギャラリー画像をロードする
-  const loadGalleryImages = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    const { imageUrls, error: fetchError } = await fetchGalleryImages();
-
-    if (fetchError) {
-      setError(fetchError);
-    }
-
-    setGalleryImages(imageUrls);
-    setIsLoading(false);
-  };
-
-  // アップロード回数が更新された時のハンドラー
-  const handleUploadCountUpdated = () => {
+  // 画像アップロード後のリロードハンドラ
+  const handleImageUploaded = () => {
+    // ギャラリー再読み込み用のカウンターをインクリメント
     setUploadCountUpdated((prev) => prev + 1);
   };
 
-  // 画像が削除された時のハンドラー
-  const handleImageDeleted = () => {
-    loadGalleryImages(); // 削除後にギャラリーを再読み込み
+  // ギャラリー画像クリック時のプレビューハンドラ
+  const handleImageClick = (url: string) => {
+    setPreviewImage(url);
   };
 
-  // パスワードをハッシュ化するデバッグ用関数 (開発時に使用)
-  const hashPasswordForDebug = async (password: string) => {
-    try {
-      const hash = await secureHash(password);
-      console.log(`Hash for '${password}': ${hash}`);
-    } catch (err) {
-      console.error("Password hashing failed:", err);
-    }
+  // モーダルを閉じるハンドラ
+  const closePreviewModal = () => {
+    setPreviewImage(null);
   };
 
-  // 必要に応じて特定の条件でパスワードハッシュをコンソールに出力
-  useEffect(() => {
-    // 開発環境でのみ使用し、本番環境では無効化
-    // この関数は開発時にのみコメントを外して使用
-    // hashPasswordForDebug("your-password-here");
-  }, []);
+  // 画像生成開始時のハンドラ
+  const handleGenerateStart = () => {
+    setIsGenerating(true);
+  };
+
+  // 画像生成終了時のハンドラ
+  const handleGenerateEnd = () => {
+    setIsGenerating(false);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-950 text-white flex flex-col">
-      {/* ヘッダー */}
-      <header className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 py-6 shadow-xl relative overflow-hidden">
-        {/* 背景要素 */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-20">
-          <div className="absolute top-1/2 left-1/4 w-24 h-24 rounded-full bg-yellow-300 blur-2xl"></div>
-          <div className="absolute top-1/3 right-1/3 w-32 h-32 rounded-full bg-blue-400 blur-3xl"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-20 h-20 rounded-full bg-purple-500 blur-2xl"></div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white flex flex-col">
+      <div className="container mx-auto px-4 pt-8 pb-16 flex-grow">
+        <header className="mb-12">
+          <div>
+            <h1 className="text-4xl font-bold mb-1 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+              LGTMagic
+            </h1>
+            <p className="text-gray-400">
+              Transform your images into magical LGTM stamps ✨
+            </p>
+          </div>
+        </header>
 
-        <div className="max-w-5xl mx-auto text-center relative z-10">
-          <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200 pb-1">
-            LGTMagic
-          </h1>
-          <p className="text-base text-blue-100 mt-2 font-medium tracking-wide">
-            Transform your images into magical LGTM stamps ✨
-          </p>
-        </div>
-      </header>
-
-      {/* メインコンテンツ */}
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-        {/* 左側のアップロードフォーム */}
-        <div className="w-full md:w-1/5 lg:w-1/4 bg-gradient-to-b from-gray-800/80 to-gray-900/90 backdrop-blur-md p-6 md:p-8 overflow-y-auto border-r border-gray-700/30">
-          <UploadForm
-            onImageSelected={setSelectedImage}
-            addLGTMText={addLGTMText}
-            setAddLGTMText={setAddLGTMText}
-            uploadCountUpdated={uploadCountUpdated}
-            isGenerating={isGenerating}
-          />
-        </div>
-
-        {/* 右側のギャラリーとプレビュー */}
-        <div className="flex-1 p-6 md:p-10 overflow-y-auto bg-gradient-to-b from-slate-900/60 to-indigo-950/60 backdrop-blur-sm">
-          <div className="max-w-6xl mx-auto">
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-6 py-4 rounded-xl mb-8 shadow-lg backdrop-blur-sm">
-                <p className="text-center">{error}</p>
-              </div>
-            )}
-
-            {/* 管理者モード状態表示 - 管理者モード時のみ表示 */}
-            {isAdminMode && (
-              <div className="bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 px-6 py-4 rounded-xl mb-8 shadow-lg backdrop-blur-sm flex items-center justify-center gap-3">
-                <ShieldCheck size={20} className="text-indigo-400" />
-                <p className="text-center">管理者モード有効</p>
-              </div>
-            )}
-
-            {/* プレビューモーダル */}
-            {previewImage && (
-              <ImagePreviewModal
-                imageUrl={previewImage}
-                onClose={() => setPreviewImage(null)}
-                isAdminMode={isAdminMode}
-                onImageDeleted={handleImageDeleted}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1">
+            {/* アップロードフォームエリア */}
+            <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+              <UploadForm
+                onImageSelected={setSelectedImage}
+                addLGTMText={addLGTMText}
+                setAddLGTMText={setAddLGTMText}
+                isGenerating={isGenerating}
+                uploadCountUpdated={uploadCountUpdated}
               />
-            )}
 
-            {/* ギャラリーセクション */}
+              <div className="mt-8">
+                <ImageGenerator
+                  selectedImage={selectedImage}
+                  addLGTMText={addLGTMText}
+                  onImageUploaded={handleImageUploaded}
+                  onUploadCountUpdated={handleImageUploaded}
+                  setSelectedImage={setSelectedImage}
+                  onGenerateStart={handleGenerateStart}
+                  onGenerateEnd={handleGenerateEnd}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            {/* ギャラリーエリア */}
             <Gallery
               isLoading={isLoading}
               images={galleryImages}
-              onImageClick={setPreviewImage}
-            />
-
-            {/* 画像生成 */}
-            <ImageGenerator
-              selectedImage={selectedImage}
-              addLGTMText={addLGTMText}
-              onImageUploaded={loadGalleryImages}
-              onUploadCountUpdated={handleUploadCountUpdated}
-              setSelectedImage={setSelectedImage}
-              onGenerateStart={() => setIsGenerating(true)}
-              onGenerateEnd={() => setIsGenerating(false)}
+              onImageClick={handleImageClick}
+              isAdminMode={isAdminMode}
+              onImageDeleted={handleImageUploaded}
             />
           </div>
         </div>
       </div>
 
-      {/* フッター */}
-      <footer className="bg-slate-900/80 backdrop-blur-sm py-4 border-t border-gray-800/60">
-        <div className="max-w-6xl mx-auto px-6 flex justify-between items-center text-sm">
-          <p className="text-gray-400">
-            LGTMagic © 2025 - Create and share LGTM images instantly
-          </p>
-
-          {/* 管理者モード切り替えボタン */}
-          <button
-            onClick={toggleAdminMode}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-              isAdminMode
-                ? "bg-indigo-600/40 hover:bg-indigo-500/40 text-indigo-300"
-                : "bg-gray-800/60 hover:bg-gray-700/60 text-gray-400 hover:text-gray-300"
-            }`}
-            title={
-              isAdminMode ? "管理者モードを終了" : "管理者モードへ切り替え"
-            }
-          >
-            {isAdminMode ? (
-              <>
-                <ShieldOff size={16} />
-                <span>管理者モード終了</span>
-              </>
-            ) : (
-              <>
-                <ShieldCheck size={16} />
-                <span>管理者モード</span>
-              </>
-            )}
-          </button>
+      {/* フッターエリア */}
+      <footer className="mt-auto py-4 border-t border-gray-800 bg-gray-900/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 flex items-center justify-between">
+          <div className="text-gray-500 text-sm">
+            Powered with ❤️ by Open Source
+          </div>
+          <div>
+            <button
+              onClick={toggleAdminMode}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
+                isAdminMode
+                  ? "bg-red-900/70 hover:bg-red-800/80 text-red-200"
+                  : "bg-gray-800/80 hover:bg-gray-700/80 text-gray-400 hover:text-gray-300"
+              } transition-colors`}
+              aria-label={
+                isAdminMode
+                  ? "管理者モードを無効にする"
+                  : "管理者モードを有効にする"
+              }
+              title={
+                isAdminMode
+                  ? "管理者モードを無効にする"
+                  : "管理者モードを有効にする"
+              }
+            >
+              {isAdminMode ? (
+                <>
+                  <ShieldCheck size={12} /> 管理者モード
+                </>
+              ) : (
+                <>
+                  <ShieldOff size={12} /> 管理者
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </footer>
 
-      {/* 管理者パスワードモーダル - isVerifying を渡す */}
+      {/* 画像プレビューモーダル */}
+      {previewImage && (
+        <ImagePreviewModal
+          imageUrl={previewImage}
+          onClose={closePreviewModal}
+          onCopy={copyToClipboard}
+          showCopySuccess={showCopySuccess}
+        />
+      )}
+
+      {/* 管理者パスワードモーダル */}
       {showPasswordModal && (
         <AdminPasswordModal
+          onVerify={verifyPassword}
           onClose={closePasswordModal}
-          onSubmit={verifyPassword}
           error={passwordError}
           isVerifying={isVerifying}
         />

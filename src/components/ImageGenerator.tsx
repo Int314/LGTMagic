@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useRef, useState, useEffect } from "react";
 import { generateLGTMImage, canvasToBlob } from "../utils/imageUtils";
 import { uploadImage } from "../services/supabase";

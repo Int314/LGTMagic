@@ -1,22 +1,79 @@
+"use client";
+
 import React, { useEffect } from "react";
+import { Trash2 } from "lucide-react";
+import { supabase } from "../services/supabase";
 
 interface GalleryProps {
-  isLoading: boolean;
-  images: string[];
-  onImageClick: (url: string) => void;
+  isLoading?: boolean;
+  images?: string[];
+  onImageClick?: (url: string) => void;
+  isAdminMode?: boolean; // 管理者モードフラグ
+  onImageDeleted?: () => void; // 画像削除後のコールバック
 }
 
 /**
  * 画像ギャラリーを表示するコンポーネント
  */
 const Gallery: React.FC<GalleryProps> = ({
-  isLoading,
-  images,
-  onImageClick,
+  isLoading = false,
+  images = [],
+  onImageClick = () => {},
+  isAdminMode = false, // 管理者モードのデフォルト値
+  onImageDeleted = () => {}, // 画像削除コールバックのデフォルト値
 }) => {
   useEffect(() => {
-    console.log("Gallery component rendered with", images.length, "images");
-  }, [images]);
+    console.log(
+      "Gallery component rendered with",
+      images?.length || 0,
+      "images",
+      isAdminMode ? "(admin mode)" : ""
+    );
+  }, [images, isAdminMode]);
+
+  // 画像のファイル名を取得する関数
+  const getImageFilename = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split("/");
+      // 最後のパス部分がファイル名
+      return pathParts[pathParts.length - 1];
+    } catch (err) {
+      console.error("Failed to parse image URL:", err);
+      return "";
+    }
+  };
+
+  // 画像削除ハンドラー
+  const handleDeleteImage = async (e: React.MouseEvent, url: string) => {
+    e.stopPropagation(); // 画像クリックイベントの伝播を停止
+
+    if (!isAdminMode) return;
+
+    const confirmDelete = window.confirm("この画像を削除しますか？");
+    if (!confirmDelete) return;
+
+    try {
+      const filename = getImageFilename(url);
+      if (!filename) {
+        throw new Error("ファイル名が取得できませんでした");
+      }
+
+      const { error } = await supabase.storage
+        .from("lgtm-images")
+        .remove([filename]);
+
+      if (error) {
+        throw error;
+      }
+
+      // 親コンポーネントに通知（ギャラリー再読み込み）
+      onImageDeleted();
+    } catch (err) {
+      console.error("Error deleting image:", err);
+      alert("画像の削除中にエラーが発生しました");
+    }
+  };
 
   return (
     <div className="space-y-8 mb-16">
@@ -41,7 +98,7 @@ const Gallery: React.FC<GalleryProps> = ({
             ></div>
           </div>
         </div>
-      ) : images.length > 0 ? (
+      ) : images && images.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
           {images.map((url, index) => (
             <div
@@ -83,6 +140,17 @@ const Gallery: React.FC<GalleryProps> = ({
                   </svg>
                 </div>
               </div>
+
+              {/* 管理者モードの場合のみ削除ボタンを表示 */}
+              {isAdminMode && (
+                <button
+                  onClick={(e) => handleDeleteImage(e, url)}
+                  className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full opacity-90 hover:opacity-100 transition-all z-10"
+                  title="画像を削除"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
 
               {/* ラベル表示 */}
               <div className="absolute bottom-2 left-3 text-xs font-medium text-white opacity-80">

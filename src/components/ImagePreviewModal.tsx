@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useRef, useEffect } from "react";
 import { X, Share2, Copy, ExternalLink, Trash2 } from "lucide-react";
 import { useLgtmClipboard } from "../hooks/useClipboard";

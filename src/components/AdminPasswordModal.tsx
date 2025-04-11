@@ -4,7 +4,7 @@ import ReactDOM from "react-dom";
 
 interface AdminPasswordModalProps {
   onClose: () => void;
-  onSubmit: (password: string) => void;
+  onVerify: (password: string) => void; // onSubmitをonVerifyに変更
   error?: string | null;
   isVerifying?: boolean; // パスワード検証中フラグを追加
 }
@@ -14,7 +14,7 @@ interface AdminPasswordModalProps {
  */
 const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({
   onClose,
-  onSubmit,
+  onVerify, // onSubmitをonVerifyに変更
   error,
   isVerifying = false, // デフォルト値設定
 }) => {
@@ -54,7 +54,7 @@ const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isVerifying && password) {
-      onSubmit(password);
+      onVerify(password); // onVerifyを呼び出す
     }
   };
 
