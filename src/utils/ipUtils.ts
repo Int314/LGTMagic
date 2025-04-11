@@ -88,7 +88,7 @@ export async function getUserIpAddress(): Promise<string> {
 
         if (data && (data.ip || data.clientIp)) {
           cachedIp = data.ip || data.clientIp;
-          return cachedIp;
+          return cachedIp || getOrCreateAnonymousId(); // nullの場合に匿名IDを返す
         }
       } catch (backupError) {
         console.warn("Backup IP API failed:", backupError);

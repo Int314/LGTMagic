@@ -9,7 +9,6 @@ import AdminPasswordModal from "./components/AdminPasswordModal";
 import { fetchGalleryImages } from "./services/supabase";
 import { useAdminMode } from "./hooks/useAdminMode";
 import { ShieldCheck, ShieldOff } from "lucide-react";
-import { useClipboard } from "./hooks/useClipboard";
 
 // 管理者パスワードをハッシュ化して環境変数から取得
 const HASHED_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD_HASH || "";
@@ -33,8 +32,6 @@ function App() {
     closePasswordModal,
     isVerifying,
   } = useAdminMode(HASHED_ADMIN_PASSWORD);
-
-  const { copyToClipboard, copySuccess } = useClipboard();
 
   // ギャラリー画像を読み込む
   useEffect(() => {
@@ -176,8 +173,8 @@ function App() {
         <ImagePreviewModal
           imageUrl={previewImage}
           onClose={closePreviewModal}
-          onCopy={copyToClipboard}
-          copySuccess={copySuccess}
+          isAdminMode={isAdminMode}
+          onImageDeleted={handleImageUploaded}
         />
       )}
 

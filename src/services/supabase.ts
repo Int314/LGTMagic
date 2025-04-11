@@ -254,7 +254,7 @@ export async function fetchGalleryImages(): Promise<string[]> {
     }
 
     // Get public URLs for all files
-    const imageUrls = files.map((file) => {
+    const imageUrls = files.map((file: StorageFile) => {
       const {
         data: { publicUrl },
       } = supabase.storage.from("lgtm-images").getPublicUrl(file.name);
