@@ -34,7 +34,7 @@ function App() {
     isVerifying,
   } = useAdminMode(HASHED_ADMIN_PASSWORD);
 
-  const { copyToClipboard, showCopySuccess } = useClipboard();
+  const { copyToClipboard, copySuccess } = useClipboard();
 
   // ギャラリー画像を読み込む
   useEffect(() => {
@@ -177,7 +177,7 @@ function App() {
           imageUrl={previewImage}
           onClose={closePreviewModal}
           onCopy={copyToClipboard}
-          showCopySuccess={showCopySuccess}
+          copySuccess={copySuccess}
         />
       )}
 
