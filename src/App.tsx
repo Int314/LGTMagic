@@ -12,7 +12,7 @@ import { ShieldCheck, ShieldOff } from "lucide-react";
 import { useClipboard } from "./hooks/useClipboard";
 
 // 管理者パスワードをハッシュ化して環境変数から取得
-const HASHED_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD_HASH;
+const HASHED_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD_HASH || "";
 
 function App() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
