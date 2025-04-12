@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Vercelデプロイ用に出力ディレクトリを設定
+  distDir: 'dist',
   images: {
     domains: ['your-supabase-project.supabase.co'], // Supabaseの画像ドメインを設定
     remotePatterns: [
