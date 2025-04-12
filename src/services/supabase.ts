@@ -116,6 +116,7 @@ export interface StorageFile {
 /**
  * IPアドレスによるアップロード回数チェック
  * DBと連携して確認し、制限を超えていればtrueを返す
+ * ユーザーのローカルタイムゾーンに基づいて日付を計算
  */
 export async function checkUploadLimitByIp(): Promise<{
   limitReached: boolean;
@@ -124,7 +125,8 @@ export async function checkUploadLimitByIp(): Promise<{
 }> {
   try {
     const ipAddress = await getUserIpAddress();
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD形式
+    // ユーザーのローカルタイムゾーンでの日付を取得
+    const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD形式
 
     // Supabaseからデータを取得
     const { data, error } = await supabase
@@ -162,6 +164,7 @@ export async function checkUploadLimitByIp(): Promise<{
 /**
  * IPアドレスベースでアップロード回数をインクリメント
  * ローカルストレージには保存せず、Supabaseのみを更新
+ * ユーザーのローカルタイムゾーンに基づいて日付を計算
  */
 export async function incrementUploadCountByIp(): Promise<{
   success: boolean;
@@ -170,7 +173,8 @@ export async function incrementUploadCountByIp(): Promise<{
 }> {
   try {
     const ipAddress = await getUserIpAddress();
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD形式
+    // ユーザーのローカルタイムゾーンでの日付を取得
+    const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD形式
 
     // まず、既存のレコードを検索
     const { data: existingRecord, error: selectError } = await supabase
