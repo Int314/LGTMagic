@@ -212,17 +212,25 @@ export async function analyzeImageContent(imageBlob: Blob): Promise<{
     // BlobをBase64に変換
     const base64Image = await blobToBase64(imageBlob);
 
-    // Supabase Edge Functionを呼び出す
-    const { data, error } = await supabase.functions.invoke("analyze-image", {
-      body: { image: base64Image },
+    console.log("画像分析を開始します...");
+
+    // Next.jsのAPI Routeを呼び出す
+    const response = await fetch("/api/analyze-image", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ image: base64Image }),
     });
 
-    // エラーチェック
-    if (error) {
-      console.error("Edge Function呼び出しエラー:", error);
-      // エラーの場合は安全のためtrueを返す
-      return { isAppropriate: true, reason: null };
+    console.log("API応答ステータス:", response.status, response.statusText);
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.statusText}`);
     }
+
+    const data = await response.json();
+    console.log("API応答データ:", data);
 
     // レスポンスデータを返す
     return {
