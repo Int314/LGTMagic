@@ -51,24 +51,10 @@ const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({
     };
   }, [onClose]);
 
-  // パスワード検証時にデバッグ情報を追加
+  // シンプルなパスワード検証処理
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    console.log("パスワード検証を開始します");
-    try {
-      // デバッグテストAPIを呼び出してサーバー機能を確認
-      const testResponse = await fetch("/api/debug-test");
-      const testData = await testResponse.json();
-      console.log("デバッグテスト結果:", testData);
-
-      // 実際のパスワード検証
-      console.log(`パスワードを検証します: ${password.substring(0, 1)}...`);
-      const result = await onVerify(password);
-      console.log("検証結果:", result ? "成功" : "失敗");
-    } catch (error) {
-      console.error("検証処理中にエラーが発生:", error);
-    }
+    await onVerify(password);
   };
 
   const handleModalClick = (e: React.MouseEvent) => {
