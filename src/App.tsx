@@ -10,9 +10,6 @@ import { fetchGalleryImages } from "./services/supabase";
 import { useAdminMode } from "./hooks/useAdminMode";
 import { ShieldCheck, ShieldOff } from "lucide-react";
 
-// 管理者パスワードをハッシュ化して環境変数から取得
-const HASHED_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD_HASH || "";
-
 function App() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
@@ -22,7 +19,7 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [addLGTMText, setAddLGTMText] = useState(true);
 
-  // 管理者モード関連のフックを使用
+  // 管理者モード関連のフックを使用（パスワードパラメータを渡さない）
   const {
     isAdminMode,
     showPasswordModal,
@@ -31,7 +28,7 @@ function App() {
     verifyPassword,
     closePasswordModal,
     isVerifying,
-  } = useAdminMode(HASHED_ADMIN_PASSWORD);
+  } = useAdminMode();
 
   // ギャラリー画像を読み込む
   useEffect(() => {

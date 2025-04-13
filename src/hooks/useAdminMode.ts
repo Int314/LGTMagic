@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { verifyPassword } from "../utils/passwordUtils";
 
 /**
  * 管理者モードのセッション有効期限（デフォルト: 30分）
@@ -8,9 +7,8 @@ const ADMIN_SESSION_EXPIRY_MS = 30 * 60 * 1000; // 30分
 
 /**
  * 管理者モード用のカスタムフック
- * @param hashedAdminPassword ハッシュ化された管理者パスワード
  */
-export function useAdminMode(hashedAdminPassword: string) {
+export function useAdminMode() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -66,7 +64,7 @@ export function useAdminMode(hashedAdminPassword: string) {
   };
 
   /**
-   * パスワードを検証するハンドラー - SHA-256ハッシュ比較を使用
+   * パスワードを検証するハンドラー - サーバーサイドでの検証を使用
    */
   const checkPassword = async (password: string) => {
     if (isVerifying) return; // 既に検証中なら処理しない
@@ -74,10 +72,23 @@ export function useAdminMode(hashedAdminPassword: string) {
     try {
       setIsVerifying(true);
 
-      // 非同期のパスワード検証
-      const isValid = await verifyPassword(password, hashedAdminPassword);
+      // サーバーサイドAPIを呼び出してパスワードを検証
+      const response = await fetch("/api/verify-admin-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
+      });
 
-      if (isValid) {
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "サーバーエラーが発生しました");
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
         setIsAdminMode(true);
         setPasswordError(null);
         setShowPasswordModal(false);
