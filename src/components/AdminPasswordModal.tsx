@@ -138,21 +138,6 @@ const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({
             )}
           </button>
         </form>
-
-        {/* ヘルプテキスト */}
-        <p className="mt-6 text-xs text-center text-gray-500">
-          管理者モードでは、画像の削除などの操作が可能になります。
-          <br />
-          パスワードがわからない場合は、サイト管理者に問い合わせてください。
-        </p>
-
-        {/* SHA-256セキュリティ情報 */}
-        <div className="mt-4 pt-4 border-t border-gray-700/30 flex items-center justify-center gap-2">
-          <Lock className="w-4 h-4 text-gray-500" />
-          <span className="text-xs text-gray-500">
-            SHA-256暗号化で保護されています
-          </span>
-        </div>
       </div>
     </div>
   );
