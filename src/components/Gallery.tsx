@@ -111,14 +111,14 @@ const Gallery: React.FC<GalleryProps> = ({
               }}
             >
               {/* 画像コンテナ - 固定サイズコンテナを使用 */}
-              <div className="w-full h-64 overflow-hidden rounded-t-xl">
+              <div className="w-full aspect-square overflow-hidden rounded-t-xl">
                 <Image
                   src={url}
                   alt={`LGTM ${index + 1}`}
                   className="w-full h-full object-cover transition-transform duration-300 ease-out will-change-transform transform-gpu group-hover:scale-105"
                   style={{ transformOrigin: "center center" }}
                   width={400}
-                  height={300}
+                  height={400}
                   loading="lazy"
                 />
               </div>
