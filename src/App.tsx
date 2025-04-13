@@ -6,6 +6,7 @@ import ImagePreviewModal from "./components/ImagePreviewModal";
 import UploadForm from "./components/UploadForm";
 import ImageGenerator from "./components/ImageGenerator";
 import AdminPasswordModal from "./components/AdminPasswordModal";
+import SiteSeo from "./components/seo/SiteSeo";
 import { fetchGalleryImages } from "./services/supabase";
 import { useAdminMode } from "./hooks/useAdminMode";
 import { ShieldCheck, ShieldOff } from "lucide-react";
@@ -75,6 +76,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white flex flex-col">
+      {/* 構造化データをヘッダに追加 */}
+      <SiteSeo />
+
       <div className="container mx-auto px-4 pt-8 pb-16 flex-grow">
         <header className="mb-12">
           <div>

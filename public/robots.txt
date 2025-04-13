@@ -1,0 +1,7 @@
+# robots.txt for LGTMagic
+
+User-agent: *
+Allow: /
+
+# サイトマップのURLを指定
+Sitemap: https://lgtmagic-pi.vercel.app/sitemap.xml
