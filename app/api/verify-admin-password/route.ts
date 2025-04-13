@@ -18,8 +18,12 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log(password);
+
     // 環境変数から生の管理者パスワードを取得
     const storedPassword = process.env.ADMIN_PASSWORD;
+
+    console.log(storedPassword);
 
     if (!storedPassword) {
       console.error("管理者パスワードが環境変数に設定されていません");
