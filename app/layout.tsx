@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "/images/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "LGTMagic - LGTM画像生成・共有ツール",
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     title: "LGTMagic - LGTM画像生成・共有ツール",
     description:
       "LGTM画像を簡単に生成・共有できるツール。あなたの画像から魔法のようにLGTMスタンプを作成しましょう。",
-    images: ["/og-image.jpg"],
+    images: ["/images/og-image.jpg"],
   },
   viewport: {
     width: "device-width",
@@ -71,7 +71,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/images/logo.svg" type="image/svg+xml" />
       </head>
       <body>{children}</body>
     </html>
