@@ -1,23 +1,6 @@
 // ユーザーのアップロード回数を管理するためのユーティリティ
 import { DAILY_UPLOAD_LIMIT } from "./constants";
 
-// セッション中に固定のユーザーIDを保持
-let sessionUserId: string | null = null;
-
-/**
- * ユーザーを識別するためのセッションIDを取得または生成する
- * localStorageは使用せず、メモリ内でのみ保持する
- */
-export function getUserId(): string {
-  if (!sessionUserId) {
-    // セッション用のランダムなIDを生成
-    sessionUserId = `session_${Math.random()
-      .toString(36)
-      .substring(2, 15)}_${Date.now()}`;
-  }
-  return sessionUserId;
-}
-
 /**
  * 本日のアップロード回数を取得する
  * 注意: 実際のカウントはSupabaseで管理し、この関数は使用しない

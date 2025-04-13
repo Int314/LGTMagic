@@ -1,7 +1,6 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import { getUserId } from "../utils/storageUtils";
 import { DAILY_UPLOAD_LIMIT } from "../utils/constants";
 import { getUserIpAddress } from "../utils/ipUtils";
 
@@ -320,9 +319,21 @@ export async function uploadImage(
         ? "jpg"
         : "png";
 
-    // Upload to Supabase Storage with public access
-    const userId = getUserId();
-    const fileName = `lgtm-${userId}-${Date.now()}.${fileExtension}`;
+    // ファイル名の生成に現在の日時を使用（YYYYMMDD_HHMMSS形式）
+    const now = new Date();
+    const dateString =
+      now.getFullYear().toString() +
+      (now.getMonth() + 1).toString().padStart(2, "0") +
+      now.getDate().toString().padStart(2, "0");
+    const timeString =
+      now.getHours().toString().padStart(2, "0") +
+      now.getMinutes().toString().padStart(2, "0") +
+      now.getSeconds().toString().padStart(2, "0");
+    const randomId = Math.random().toString(36).substring(2, 8); // 短いランダム文字列
+
+    // 最終的なファイル名: lgtm-YYYYMMDD_HHMMSS-{ランダム文字列}.{拡張子}
+    const fileName = `lgtm-${dateString}_${timeString}-${randomId}.${fileExtension}`;
+
     const { error: uploadError } = await supabase.storage
       .from("lgtm-images")
       .upload(fileName, blob, {
