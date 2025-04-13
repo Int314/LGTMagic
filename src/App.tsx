@@ -114,6 +114,40 @@ function App() {
                   onGenerateEnd={handleGenerateEnd}
                 />
               </div>
+
+              {/* X(Twitter)シェアボタン */}
+              <div className="mt-6 flex justify-center text-xs">
+                <button
+                  onClick={() => {
+                    const shareUrl = encodeURIComponent(window.location.href);
+                    const shareText = encodeURIComponent(
+                      "LGTMagic - Transform your images into magical LGTM stamps ✨"
+                    );
+                    window.open(
+                      `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}`,
+                      "_blank",
+                      "width=550,height=420"
+                    );
+                  }}
+                  className="inline-flex items-center gap-2 bg-black hover:bg-gray-900 text-white px-5 py-2 rounded-full transition-colors border border-gray-700"
+                  aria-label="X(Twitter)でシェア"
+                  title="X(Twitter)でシェア"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    className="text-white"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"
+                    />
+                  </svg>
+                  X(Twitter)でシェアする
+                </button>
+              </div>
             </div>
           </div>
 
@@ -131,40 +165,84 @@ function App() {
       </div>
 
       {/* フッターエリア */}
-      <footer className="mt-auto py-4 border-t border-gray-800 bg-gray-900/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 flex items-center justify-between">
-          <div className="text-gray-500 text-sm">
-            Powered with ❤️ by Open Source
-          </div>
-          <div>
-            <button
-              onClick={toggleAdminMode}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
-                isAdminMode
-                  ? "bg-red-900/70 hover:bg-red-800/80 text-red-200"
-                  : "bg-gray-800/80 hover:bg-gray-700/80 text-gray-400 hover:text-gray-300"
-              } transition-colors`}
-              aria-label={
-                isAdminMode
-                  ? "管理者モードを無効にする"
-                  : "管理者モードを有効にする"
-              }
-              title={
-                isAdminMode
-                  ? "管理者モードを無効にする"
-                  : "管理者モードを有効にする"
-              }
-            >
-              {isAdminMode ? (
-                <>
-                  <ShieldCheck size={12} /> 管理者モード
-                </>
-              ) : (
-                <>
-                  <ShieldOff size={12} /> 管理者
-                </>
-              )}
-            </button>
+      <footer className="mt-auto py-3 border-t border-gray-800 bg-gray-900/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between">
+            <div className="text-gray-500 text-xs mb-2 sm:mb-0 flex items-center">
+              <span>© {new Date().getFullYear()} LGTMagic</span>
+              <span className="mx-2 hidden sm:inline">|</span>
+              <span className="hidden sm:inline">
+                Powered with ❤️ by Open Source
+              </span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <a
+                href="https://github.com/Int314/LGTMagic"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1 text-xs"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                </svg>
+                GitHub
+              </a>
+              <a
+                href="https://twitter.com/Int314"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1 text-xs"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+                </svg>
+                運営者
+              </a>
+              <button
+                onClick={toggleAdminMode}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
+                  isAdminMode
+                    ? "bg-red-900/70 hover:bg-red-800/80 text-red-200"
+                    : "bg-gray-800/80 hover:bg-gray-700/80 text-gray-400 hover:text-gray-300"
+                } transition-colors`}
+                aria-label={
+                  isAdminMode
+                    ? "管理者モードを無効にする"
+                    : "管理者モードを有効にする"
+                }
+                title={
+                  isAdminMode
+                    ? "管理者モードを無効にする"
+                    : "管理者モードを有効にする"
+                }
+              >
+                {isAdminMode ? (
+                  <>
+                    <ShieldCheck size={12} /> 管理者モード
+                  </>
+                ) : (
+                  <>
+                    <ShieldOff size={12} />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </footer>
