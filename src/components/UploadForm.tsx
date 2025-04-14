@@ -10,6 +10,12 @@ interface UploadFormProps {
   setAddLGTMText: (value: boolean) => void;
   uploadCountUpdated?: number;
   isGenerating?: boolean;
+  // アップロード情報を親コンポーネントに通知するためのコールバックを追加
+  onUploadInfoUpdate?: (info: {
+    remainingUploads: number;
+    isLoading: boolean;
+    error: string | null;
+  }) => void;
 }
 
 /**
@@ -22,6 +28,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
   setAddLGTMText,
   uploadCountUpdated = 0, // デフォルト値を設定
   isGenerating = false, // デフォルト値を設定
+  onUploadInfoUpdate, // 親コンポーネントにアップロード情報を通知するコールバック
 }) => {
   const [imageUrl, setImageUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -33,29 +40,58 @@ const UploadForm: React.FC<UploadFormProps> = ({
   useEffect(() => {
     async function fetchUploadLimits() {
       setIsLoading(true);
+      let errorMsg: string | null = null;
+
       try {
         // IPアドレスベースでの制限をチェック（Supabaseのみ）
         const { currentCount, error } = await checkUploadLimitByIp();
 
         if (error) {
           console.warn("IP limit check failed:", error);
+          errorMsg = error;
           // エラー時はデフォルトの制限を設定
           setRemainingUploads(DAILY_UPLOAD_LIMIT);
         } else {
           // 残りの回数を計算
-          setRemainingUploads(Math.max(0, DAILY_UPLOAD_LIMIT - currentCount));
+          const remaining = Math.max(0, DAILY_UPLOAD_LIMIT - currentCount);
+          setRemainingUploads(remaining);
+
+          // 親コンポーネントに最新のアップロード情報を通知
+          if (onUploadInfoUpdate) {
+            onUploadInfoUpdate({
+              remainingUploads: remaining,
+              isLoading: false,
+              error: null,
+            });
+          }
         }
       } catch (err) {
         console.error("Failed to check upload limits:", err);
+        errorMsg =
+          err instanceof Error
+            ? err.message
+            : "アップロード制限の確認に失敗しました";
         // エラー時はデフォルトの制限を設定
         setRemainingUploads(DAILY_UPLOAD_LIMIT);
+
+        // エラー時の通知
+        if (onUploadInfoUpdate) {
+          onUploadInfoUpdate({
+            remainingUploads: DAILY_UPLOAD_LIMIT,
+            isLoading: false,
+            error: errorMsg,
+          });
+        }
       } finally {
         setIsLoading(false);
       }
     }
 
     fetchUploadLimits();
-  }, [uploadCountUpdated]); // uploadCountUpdatedが変更されたときに残りのアップロード回数を再取得
+    // onUploadInfoUpdateを依存配列に含めると、親コンポーネントから渡される度に
+    // useEffectが再実行される可能性があるため、意図的に除外しています
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadCountUpdated]); // onUploadInfoUpdateを依存配列から削除
 
   /**
    * ファイルサイズをフォーマットして表示用の文字列を返す
@@ -113,46 +149,13 @@ const UploadForm: React.FC<UploadFormProps> = ({
   };
 
   return (
-    <div className="flex flex-col space-y-8 w-full max-w-xs mx-auto">
-      {/* タイトルとメッセージ */}
-      <div className="text-center space-y-1">
-        <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">
-          画像をアップロード
-        </h2>
-      </div>
-
-      {/* 画像生成中の表示 */}
-      {isGenerating && (
-        <div className="bg-indigo-600/30 border-2 border-indigo-500/70 text-indigo-200 px-4 py-4 rounded-lg shadow-lg backdrop-blur-sm animate-pulse">
-          <div className="flex items-center justify-center space-x-3">
-            <div className="animate-spin h-6 w-6 border-2 border-indigo-300 border-t-transparent rounded-full"></div>
-            <p className="text-center font-semibold text-base">画像生成中...</p>
-          </div>
-        </div>
-      )}
-
+    <div className="flex flex-col space-y-6">
       {/* エラーメッセージ */}
       {error && (
         <div className="bg-red-500/10 border border-red-500/40 text-red-300 px-4 py-3 rounded-lg text-sm shadow-lg backdrop-blur-sm animate-pulse">
           <p className="text-center">{error}</p>
         </div>
       )}
-
-      {/* LGTMテキスト追加のチェックボックス */}
-      <div className="text-center">
-        <label className="flex items-center justify-center gap-2 bg-indigo-900/30 hover:bg-indigo-800/40 transition-colors px-4 py-3 rounded-lg border border-indigo-700/40 cursor-pointer group">
-          <input
-            type="checkbox"
-            id="addLGTMText"
-            checked={addLGTMText}
-            onChange={(e) => setAddLGTMText(e.target.checked)}
-            className="w-4 h-4 text-indigo-600 bg-gray-800 border-gray-600 rounded focus:ring-indigo-500"
-          />
-          <span className="text-gray-200 group-hover:text-white transition-colors font-medium text-sm">
-            画像にLGTMテキストを追加する
-          </span>
-        </label>
-      </div>
 
       {/* タブセレクター */}
       <div className="flex bg-gray-800/50 rounded-lg p-1 border border-gray-700/40">
@@ -269,39 +272,6 @@ const UploadForm: React.FC<UploadFormProps> = ({
                 </button>
               </div>
             </form>
-          </div>
-        )}
-      </div>
-
-      {/* IPアドレス取得の説明 */}
-      <div className="text-left">
-        <p className="text-xs text-gray-500">
-          ・画像アップロード時にIPアドレスを取得します
-          <br />
-          ・運営者の気分によって画像を削除することがあります
-        </p>
-      </div>
-
-      {/* 残りのアップロード回数 */}
-      <div className="bg-gray-800/30 rounded-lg border border-gray-700/30 px-4 py-3 text-center">
-        {isLoading ? (
-          <div className="flex items-center justify-center space-x-2">
-            <div className="animate-spin h-4 w-4 border-2 border-indigo-400 border-t-transparent rounded-full"></div>
-            <p className="text-gray-400 text-sm">アップロード制限を確認中...</p>
-          </div>
-        ) : (
-          <div>
-            <p className="text-gray-300 text-sm">本日の残りアップロード回数</p>
-            <p className="font-semibold text-lg">
-              <span
-                className={`${
-                  remainingUploads > 0 ? "text-green-400" : "text-red-400"
-                }`}
-              >
-                {remainingUploads}
-              </span>{" "}
-              <span className="text-gray-500">/ {DAILY_UPLOAD_LIMIT}</span>
-            </p>
           </div>
         )}
       </div>

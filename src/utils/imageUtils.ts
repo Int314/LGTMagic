@@ -1,12 +1,33 @@
 import { MAX_FILE_SIZE } from "./constants";
 
 /**
+ * フォントスタイル設定のインターフェース
+ */
+export interface FontSettings {
+  mainFont?: string; // メインテキスト（LGTM）のフォント
+  subFont?: string; // サブテキスト（Looks Good To Me）のフォント
+  textColor?: string; // テキストの色
+  bgOpacity?: number; // 背景の透明度（0～1）
+  showSubtext?: boolean; // サブテキスト（Looks Good To Me）を表示するか
+}
+
+// デフォルトのフォント設定
+export const DEFAULT_FONT_SETTINGS: FontSettings = {
+  mainFont: "'Montserrat', 'Roboto', sans-serif",
+  subFont: "'Montserrat', 'Roboto', sans-serif",
+  textColor: "white",
+  bgOpacity: 0.2,
+  showSubtext: true,
+};
+
+/**
  * 画像にLGTMテキストを追加する
  */
 export function generateLGTMImage(
   canvas: HTMLCanvasElement,
   selectedImage: string,
-  addLGTMText: boolean
+  addLGTMText: boolean,
+  fontSettings: FontSettings = DEFAULT_FONT_SETTINGS
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const ctx = canvas.getContext("2d");
@@ -48,8 +69,14 @@ export function generateLGTMImage(
           const backgroundHeight = lgtmFontSize * 1.8; // 高さを少し大きくして余白を確保
           const backgroundY = textY - backgroundHeight / 2;
 
+          // フォント設定を適用
+          const settings = {
+            ...DEFAULT_FONT_SETTINGS,
+            ...fontSettings,
+          };
+
           // 単色の半透明背景を描画
-          ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+          ctx.fillStyle = `rgba(0, 0, 0, ${settings.bgOpacity})`;
           ctx.fillRect(0, backgroundY, targetWidth, backgroundHeight);
 
           // LGTMテキストの影を描画
@@ -59,8 +86,8 @@ export function generateLGTMImage(
           ctx.shadowOffsetY = lgtmFontSize * 0.05;
 
           // LGTM（メインテキスト）
-          ctx.fillStyle = "white";
-          ctx.font = `bold ${lgtmFontSize}px 'Montserrat', 'Roboto', sans-serif`;
+          ctx.fillStyle = settings.textColor;
+          ctx.font = `bold ${lgtmFontSize}px ${settings.mainFont}`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
 
@@ -68,20 +95,25 @@ export function generateLGTMImage(
           ctx.fillText("LGTM", targetWidth / 2, textY - lgtmFontSize * 0.1);
 
           // サブテキスト（Looks Good To Me）をさらに下に配置
-          ctx.shadowBlur = subtextFontSize * 0.1;
-          ctx.font = `${subtextFontSize}px 'Montserrat', 'Roboto', sans-serif`;
-          ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+          if (settings.showSubtext) {
+            ctx.shadowBlur = subtextFontSize * 0.1;
+            ctx.font = `${subtextFontSize}px ${settings.subFont}`;
+            ctx.fillStyle =
+              settings.textColor === "white"
+                ? "rgba(255, 255, 255, 0.85)"
+                : `${settings.textColor}CC`; // カラーコードに透明度を追加
 
-          // サブテキストの影を軽くする
-          ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-          ctx.shadowOffsetY = subtextFontSize * 0.03;
+            // サブテキストの影を軽くする
+            ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+            ctx.shadowOffsetY = subtextFontSize * 0.03;
 
-          // サブテキストの位置も適宜調整
-          ctx.fillText(
-            "Looks Good To Me",
-            targetWidth / 2,
-            textY + lgtmFontSize * 0.625
-          );
+            // サブテキストの位置も適宜調整
+            ctx.fillText(
+              "Looks Good To Me",
+              targetWidth / 2,
+              textY + lgtmFontSize * 0.625
+            );
+          }
 
           // 影をリセット
           ctx.shadowColor = "transparent";

@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Gallery from "./components/Gallery";
 import ImagePreviewModal from "./components/ImagePreviewModal";
-import UploadForm from "./components/UploadForm";
-import ImageGenerator from "./components/ImageGenerator";
+import UploadSection from "./components/UploadSection";
 import AdminPasswordModal from "./components/AdminPasswordModal";
 import SiteSeo from "./components/seo/SiteSeo";
 import { fetchGalleryImages } from "./services/supabase";
 import { useAdminMode } from "./hooks/useAdminMode";
 import { ShieldCheck, ShieldOff } from "lucide-react";
+import { DAILY_UPLOAD_LIMIT } from "./utils/constants";
 
 function App() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -19,6 +19,14 @@ function App() {
   const [uploadCountUpdated, setUploadCountUpdated] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [addLGTMText, setAddLGTMText] = useState(true);
+  const uploadInfoRef = useRef<HTMLDivElement | null>(null);
+
+  // アップロード情報の状態管理
+  const [uploadInfo, setUploadInfo] = useState({
+    remainingUploads: DAILY_UPLOAD_LIMIT,
+    isLoading: false,
+    error: null as string | null,
+  });
 
   // 管理者モード関連のフックを使用（パスワードパラメータを渡さない）
   const {
@@ -69,9 +77,17 @@ function App() {
     setIsGenerating(true);
   };
 
-  // 画像生成終了時のハンドラ
   const handleGenerateEnd = () => {
     setIsGenerating(false);
+  };
+
+  // アップロード情報を更新する関数を追加
+  const handleUploadInfoUpdate = (info: {
+    remainingUploads: number;
+    isLoading: boolean;
+    error: string | null;
+  }) => {
+    setUploadInfo(info);
   };
 
   return (
@@ -94,60 +110,50 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
             {/* アップロードフォームエリア */}
-            <div className="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
-              <UploadForm
-                onImageSelected={setSelectedImage}
-                addLGTMText={addLGTMText}
-                setAddLGTMText={setAddLGTMText}
-                isGenerating={isGenerating}
-                uploadCountUpdated={uploadCountUpdated}
-              />
+            <UploadSection
+              selectedImage={selectedImage}
+              setSelectedImage={setSelectedImage}
+              addLGTMText={addLGTMText}
+              setAddLGTMText={setAddLGTMText}
+              isGenerating={isGenerating}
+              uploadCountUpdated={uploadCountUpdated}
+              onUploadInfoUpdate={handleUploadInfoUpdate}
+              onImageUploaded={handleImageUploaded}
+              onGenerateStart={handleGenerateStart}
+              onGenerateEnd={handleGenerateEnd}
+              uploadInfo={uploadInfo}
+            />
 
-              <div className="mt-8">
-                <ImageGenerator
-                  selectedImage={selectedImage}
-                  addLGTMText={addLGTMText}
-                  onImageUploaded={handleImageUploaded}
-                  onUploadCountUpdated={handleImageUploaded}
-                  setSelectedImage={setSelectedImage}
-                  onGenerateStart={handleGenerateStart}
-                  onGenerateEnd={handleGenerateEnd}
-                />
-              </div>
-
-              {/* X(Twitter)シェアボタン */}
-              <div className="mt-6 flex justify-center text-xs">
-                <button
-                  onClick={() => {
-                    const shareUrl = encodeURIComponent(window.location.href);
-                    const shareText = encodeURIComponent(
-                      "LGTMagic - Transform your images into magical LGTM stamps ✨"
-                    );
-                    window.open(
-                      `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}`,
-                      "_blank",
-                      "width=550,height=420"
-                    );
-                  }}
-                  className="inline-flex items-center gap-2 bg-black hover:bg-gray-900 text-white px-5 py-2 rounded-full transition-colors border border-gray-700"
-                  aria-label="X(Twitter)でシェア"
-                  title="X(Twitter)でシェア"
+            {/* X(Twitter)シェアボタン */}
+            <div className="mt-6 flex justify-center text-xs">
+              <button
+                onClick={() => {
+                  const shareUrl = encodeURIComponent(window.location.href);
+                  const shareText = encodeURIComponent(
+                    "LGTMagic - Transform your images into magical LGTM stamps ✨"
+                  );
+                  window.open(
+                    `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}`,
+                    "_blank",
+                    "width=550,height=420"
+                  );
+                }}
+                className="inline-flex items-center gap-2 bg-black hover:bg-gray-900 text-white px-5 py-2 rounded-full transition-colors border border-gray-700"
+                aria-label="X(Twitter)でシェア"
+                title="X(Twitter)でシェア"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  className="text-white"
+                  fill="currentColor"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    className="text-white"
-                  >
-                    <path
-                      fill="currentColor"
-                      d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"
-                    />
-                  </svg>
-                  X(Twitter)でシェアする
-                </button>
-              </div>
+                  <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+                </svg>
+                X(Twitter)でシェアする
+              </button>
             </div>
           </div>
 
@@ -193,7 +199,7 @@ function App() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
                 </svg>
                 GitHub
               </a>

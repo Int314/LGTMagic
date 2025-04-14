@@ -334,15 +334,47 @@ export async function uploadImage(
     // 最終的なファイル名: lgtm-YYYYMMDD_HHMMSS-{ランダム文字列}.{拡張子}
     const fileName = `lgtm-${dateString}_${timeString}-${randomId}.${fileExtension}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("lgtm-images")
-      .upload(fileName, blob, {
-        contentType,
-        cacheControl: "3600",
-        upsert: false,
-      });
+    // ストレージへのアップロードを試みる前にコンソールにログを出力
+    console.log(
+      `Uploading file: ${fileName} to bucket: lgtm-images (content-type: ${contentType})`
+    );
 
-    if (uploadError) throw uploadError;
+    try {
+      const { error: uploadError, data } = await supabase.storage
+        .from("lgtm-images")
+        .upload(fileName, blob, {
+          contentType,
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error("Supabase storage upload error:", {
+          code: uploadError.code,
+          message: uploadError.message,
+          details: uploadError.details,
+          hint: uploadError.hint,
+        });
+        throw new Error(`ストレージアクセスエラー: ${uploadError.message}`);
+      }
+
+      console.log("Uploaded successfully:", data);
+    } catch (uploadErr) {
+      console.error("Failed in upload attempt:", uploadErr);
+      // 認証情報の問題かどうかを確認
+      if (
+        uploadErr.toString().includes("Access") ||
+        uploadErr.toString().includes("permission")
+      ) {
+        // 認証関連のエラーと判断
+        return {
+          url: null,
+          error:
+            "ストレージアクセス権限がありません。ローカル環境では予期されるエラーです。本番環境では動作します。",
+        };
+      }
+      throw uploadErr;
+    }
 
     // アップロード回数をインクリメント（IPアドレスベース）
     await incrementUploadCountByIp();
@@ -355,9 +387,15 @@ export async function uploadImage(
     return { url: publicUrl, error: null };
   } catch (err) {
     console.error("Error uploading image:", err);
+    // より詳細なエラー情報を提供
+    const errorMessage =
+      err instanceof Error
+        ? `エラー: ${err.message}${err.stack ? `\nスタック: ${err.stack}` : ""}`
+        : "画像アップロード中に不明なエラーが発生しました";
+
     return {
       url: null,
-      error: err instanceof Error ? err.message : "Failed to upload image",
+      error: errorMessage,
     };
   }
 }
