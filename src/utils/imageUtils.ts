@@ -1,5 +1,4 @@
 import { MAX_FILE_SIZE } from "./constants";
-import { supabase } from "../services/supabase";
 
 /**
  * 画像にLGTMテキストを追加する
@@ -50,7 +49,7 @@ export function generateLGTMImage(
           const backgroundY = textY - backgroundHeight / 2;
 
           // 単色の半透明背景を描画
-          ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+          ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
           ctx.fillRect(0, backgroundY, targetWidth, backgroundHeight);
 
           // LGTMテキストの影を描画
@@ -61,27 +60,27 @@ export function generateLGTMImage(
 
           // LGTM（メインテキスト）
           ctx.fillStyle = "white";
-          ctx.font = `bold ${lgtmFontSize}px 'Arial', sans-serif`;
+          ctx.font = `bold ${lgtmFontSize}px 'Montserrat', 'Roboto', sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
 
-          // メインテキストの位置を上に移動
-          ctx.fillText("LGTM", targetWidth / 2, textY - lgtmFontSize * 0.25);
+          // メインテキストの位置を調整
+          ctx.fillText("LGTM", targetWidth / 2, textY - lgtmFontSize * 0.1);
 
           // サブテキスト（Looks Good To Me）をさらに下に配置
           ctx.shadowBlur = subtextFontSize * 0.1;
-          ctx.font = `${subtextFontSize}px 'Arial', sans-serif`;
+          ctx.font = `${subtextFontSize}px 'Montserrat', 'Roboto', sans-serif`;
           ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
 
           // サブテキストの影を軽くする
           ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
           ctx.shadowOffsetY = subtextFontSize * 0.03;
 
-          // サブテキストの位置を下に移動してスペースを広げる
+          // サブテキストの位置も適宜調整
           ctx.fillText(
             "Looks Good To Me",
             targetWidth / 2,
-            textY + lgtmFontSize * 0.5
+            textY + lgtmFontSize * 0.625
           );
 
           // 影をリセット
