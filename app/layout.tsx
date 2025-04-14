@@ -1,6 +1,11 @@
 import React from "react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: "LGTMagic - LGTM画像生成・共有ツール",
@@ -45,10 +50,6 @@ export const metadata: Metadata = {
     description:
       "LGTM画像を簡単に生成・共有できるツール。あなたの画像から魔法のようにLGTMスタンプを作成しましょう。",
     images: ["/images/og-image.jpg"],
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
   },
   robots: {
     index: true,
