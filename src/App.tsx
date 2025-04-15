@@ -18,7 +18,8 @@ function App() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [uploadCountUpdated, setUploadCountUpdated] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [addLGTMText, setAddLGTMText] = useState(true);
+  const [addLGTMText, setAddLGTMText] = useState(true); // LGTMテキストを追加するかどうか
+
   const uploadInfoRef = useRef<HTMLDivElement | null>(null);
 
   // アップロード情報の状態管理

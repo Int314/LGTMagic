@@ -32,16 +32,6 @@ const AVAILABLE_FONTS = [
   { name: "Courier New", value: "'Courier New', monospace" },
 ];
 
-// 利用可能な色のリスト
-const AVAILABLE_COLORS = [
-  { name: "白", value: "white" },
-  { name: "黄色", value: "yellow" },
-  { name: "赤", value: "red" },
-  { name: "青", value: "dodgerblue" },
-  { name: "緑", value: "lime" },
-  { name: "ピンク", value: "pink" },
-];
-
 /**
  * LGTM画像生成・アップロード用コンポーネント
  */
@@ -65,12 +55,17 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const imageFormat = "image/webp";
   const imageQuality = 0.8;
 
+  // 設定パネルの表示状態
+  const [showSettings, setShowSettings] = useState(false);
+  // 設定タブの選択状態
+  const [activeTab, setActiveTab] = useState<"lgtm" | "subtext" | "background">(
+    "lgtm"
+  );
+
   // フォント設定の状態管理を追加
   const [fontSettings, setFontSettings] = useState<FontSettings>({
     ...DEFAULT_FONT_SETTINGS,
   });
-  // 設定パネルの表示状態
-  const [showSettings, setShowSettings] = useState(false);
 
   const uploadGeneratedImage = useCallback(async () => {
     if (!canvasRef.current) return;
@@ -253,121 +248,286 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
               </label>
             </div>
 
-            {/* フォント設定フォーム */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* メインフォント選択 */}
-              <div>
-                <label
-                  htmlFor="mainFont"
-                  className="block text-sm font-medium mb-1"
-                >
-                  「LGTM」のフォント
-                </label>
-                <select
-                  id="mainFont"
-                  value={fontSettings.mainFont}
-                  onChange={(e) =>
-                    handleFontSettingChange("mainFont", e.target.value)
-                  }
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-                >
-                  {AVAILABLE_FONTS.map((font) => (
-                    <option key={font.value} value={font.value}>
-                      {font.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* サブフォント選択 */}
-              <div>
-                <label
-                  htmlFor="subFont"
-                  className="block text-sm font-medium mb-1"
-                >
-                  「Looks Good To Me」のフォント
-                </label>
-                <select
-                  id="subFont"
-                  value={fontSettings.subFont}
-                  onChange={(e) =>
-                    handleFontSettingChange("subFont", e.target.value)
-                  }
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-                >
-                  {AVAILABLE_FONTS.map((font) => (
-                    <option key={font.value} value={font.value}>
-                      {font.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* テキスト色選択 */}
-              <div>
-                <label
-                  htmlFor="textColor"
-                  className="block text-sm font-medium mb-1"
-                >
-                  テキストの色
-                </label>
-                <select
-                  id="textColor"
-                  value={fontSettings.textColor}
-                  onChange={(e) =>
-                    handleFontSettingChange("textColor", e.target.value)
-                  }
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-                >
-                  {AVAILABLE_COLORS.map((color) => (
-                    <option key={color.value} value={color.value}>
-                      {color.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 背景透明度スライダー */}
-              <div>
-                <label
-                  htmlFor="bgOpacity"
-                  className="block text-sm font-medium mb-1"
-                >
-                  背景の透明度:{" "}
-                  {Math.round(Number(fontSettings.bgOpacity) * 100)}%
-                </label>
-                <input
-                  id="bgOpacity"
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={fontSettings.bgOpacity}
-                  onChange={(e) =>
-                    handleFontSettingChange("bgOpacity", Number(e.target.value))
-                  }
-                  className="w-full"
-                />
-              </div>
-
-              {/* サブテキスト表示切替 */}
-              <div className="col-span-1 md:col-span-2">
-                <label className="inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={fontSettings.showSubtext}
-                    onChange={(e) =>
-                      handleFontSettingChange("showSubtext", e.target.checked)
-                    }
-                    className="sr-only peer"
-                  />
-                  <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                  <span className="ms-3 text-sm font-medium">
-                    「Looks Good To Me」を表示
-                  </span>
-                </label>
-              </div>
+            {/* タブナビゲーション */}
+            <div className="flex mb-4 border-b border-gray-200 dark:border-gray-700">
+              <button
+                className={`px-4 py-2 text-sm font-medium ${
+                  activeTab === "lgtm"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => setActiveTab("lgtm")}
+              >
+                LGTM設定
+              </button>
+              <button
+                className={`px-4 py-2 text-sm font-medium ${
+                  activeTab === "subtext"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => setActiveTab("subtext")}
+              >
+                Looks Good To Me設定
+              </button>
+              <button
+                className={`px-4 py-2 text-sm font-medium ${
+                  activeTab === "background"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+                onClick={() => setActiveTab("background")}
+              >
+                背景設定
+              </button>
             </div>
+
+            {/* LGTM設定タブパネル */}
+            {activeTab === "lgtm" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* LGTMテキスト表示切替 */}
+                <div className="col-span-1 md:col-span-2 mb-2">
+                  <label className="inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={fontSettings.showMainText}
+                      onChange={(e) =>
+                        handleFontSettingChange(
+                          "showMainText",
+                          e.target.checked
+                        )
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    <span className="ms-3 text-sm font-medium">
+                      「LGTM」を表示
+                    </span>
+                  </label>
+                </div>
+
+                {/* メインフォント選択 */}
+                {fontSettings.showMainText && (
+                  <>
+                    <div>
+                      <label
+                        htmlFor="mainFont"
+                        className="block text-sm font-medium mb-1"
+                      >
+                        「LGTM」のフォント
+                      </label>
+                      <select
+                        id="mainFont"
+                        value={fontSettings.mainFont}
+                        onChange={(e) =>
+                          handleFontSettingChange("mainFont", e.target.value)
+                        }
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                      >
+                        {AVAILABLE_FONTS.map((font) => (
+                          <option key={font.value} value={font.value}>
+                            {font.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* メインテキスト色選択 */}
+                    <div>
+                      <label
+                        htmlFor="mainTextColor"
+                        className="block text-sm font-medium mb-1"
+                      >
+                        テキスト色
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="mainTextColor"
+                          type="color"
+                          value={
+                            fontSettings.mainTextColor?.startsWith("#")
+                              ? fontSettings.mainTextColor
+                              : "#ffffff"
+                          }
+                          onChange={(e) =>
+                            handleFontSettingChange(
+                              "mainTextColor",
+                              e.target.value
+                            )
+                          }
+                          className="w-10 h-10 rounded cursor-pointer"
+                        />
+                        <span className="text-sm">
+                          {fontSettings.mainTextColor}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Looks Good To Me設定タブパネル */}
+            {activeTab === "subtext" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* サブテキスト表示切替 */}
+                <div className="col-span-1 md:col-span-2 mb-2">
+                  <label className="inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={fontSettings.showSubtext}
+                      onChange={(e) =>
+                        handleFontSettingChange("showSubtext", e.target.checked)
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    <span className="ms-3 text-sm font-medium">
+                      「Looks Good To Me」を表示
+                    </span>
+                  </label>
+                </div>
+
+                {fontSettings.showSubtext && (
+                  <>
+                    {/* サブフォント選択 */}
+                    <div>
+                      <label
+                        htmlFor="subFont"
+                        className="block text-sm font-medium mb-1"
+                      >
+                        フォント
+                      </label>
+                      <select
+                        id="subFont"
+                        value={fontSettings.subFont}
+                        onChange={(e) =>
+                          handleFontSettingChange("subFont", e.target.value)
+                        }
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                      >
+                        {AVAILABLE_FONTS.map((font) => (
+                          <option key={font.value} value={font.value}>
+                            {font.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* サブテキスト色選択 */}
+                    <div>
+                      <label
+                        htmlFor="subTextColor"
+                        className="block text-sm font-medium mb-1"
+                      >
+                        テキスト色
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="subTextColor"
+                          type="color"
+                          value={
+                            fontSettings.subTextColor?.startsWith("#")
+                              ? fontSettings.subTextColor
+                              : "#ffffff"
+                          }
+                          onChange={(e) =>
+                            handleFontSettingChange(
+                              "subTextColor",
+                              e.target.value
+                            )
+                          }
+                          className="w-10 h-10 rounded cursor-pointer"
+                        />
+                        <span className="text-sm">
+                          {fontSettings.subTextColor}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* 背景設定タブパネル */}
+            {activeTab === "background" && (
+              <div className="grid grid-cols-1 gap-4">
+                {/* 背景表示切替 */}
+                <div className="mb-2">
+                  <label className="inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={fontSettings.showBackground}
+                      onChange={(e) =>
+                        handleFontSettingChange(
+                          "showBackground",
+                          e.target.checked
+                        )
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    <span className="ms-3 text-sm font-medium">背景を表示</span>
+                  </label>
+                </div>
+
+                {/* 背景透明度スライダー */}
+                {fontSettings.showBackground && (
+                  <>
+                    <div>
+                      <label
+                        htmlFor="bgOpacity"
+                        className="block text-sm font-medium mb-1"
+                      >
+                        背景の透明度:{" "}
+                        {Math.round(Number(fontSettings.bgOpacity) * 100)}%
+                      </label>
+                      <input
+                        id="bgOpacity"
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={fontSettings.bgOpacity}
+                        onChange={(e) =>
+                          handleFontSettingChange(
+                            "bgOpacity",
+                            Number(e.target.value)
+                          )
+                        }
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* 背景色 */}
+                    <div>
+                      <label
+                        htmlFor="bgColor"
+                        className="block text-sm font-medium mb-1"
+                      >
+                        背景色
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="bgColor"
+                          type="color"
+                          value={
+                            fontSettings.bgColor?.startsWith("#")
+                              ? fontSettings.bgColor
+                              : "#000000"
+                          }
+                          onChange={(e) =>
+                            handleFontSettingChange("bgColor", e.target.value)
+                          }
+                          className="w-10 h-10 rounded cursor-pointer"
+                        />
+                        <span className="text-sm">{fontSettings.bgColor}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

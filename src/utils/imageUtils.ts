@@ -9,6 +9,14 @@ export interface FontSettings {
   textColor?: string; // テキストの色
   bgOpacity?: number; // 背景の透明度（0～1）
   showSubtext?: boolean; // サブテキスト（Looks Good To Me）を表示するか
+  showBackground?: boolean; // 背景を表示するか
+  // 新しく追加するプロパティ
+  mainTextColor?: string; // メインテキスト色
+  mainTextGradient?: string; // メインテキストのグラデーション種類
+  subTextColor?: string; // サブテキスト色
+  subTextGradient?: string; // サブテキストのグラデーション種類
+  showMainText?: boolean; // メインテキスト（LGTM）を表示するか
+  bgColor?: string; // 背景色
 }
 
 // デフォルトのフォント設定
@@ -18,6 +26,14 @@ export const DEFAULT_FONT_SETTINGS: FontSettings = {
   textColor: "white",
   bgOpacity: 0.2,
   showSubtext: true,
+  showBackground: true,
+  // 新しいプロパティのデフォルト値
+  mainTextColor: "white",
+  mainTextGradient: "none",
+  subTextColor: "white",
+  subTextGradient: "none",
+  showMainText: true, // LGTMテキストを表示するデフォルト値
+  bgColor: "black", // 背景色のデフォルト値
 };
 
 /**
@@ -65,43 +81,62 @@ export function generateLGTMImage(
 
         // テキストのスタイル設定
         const renderStylishText = () => {
-          // 背景の高さを調整
-          const backgroundHeight = lgtmFontSize * 1.8; // 高さを少し大きくして余白を確保
-          const backgroundY = textY - backgroundHeight / 2;
-
           // フォント設定を適用
           const settings = {
             ...DEFAULT_FONT_SETTINGS,
             ...fontSettings,
           };
 
-          // 単色の半透明背景を描画
-          ctx.fillStyle = `rgba(0, 0, 0, ${settings.bgOpacity})`;
-          ctx.fillRect(0, backgroundY, targetWidth, backgroundHeight);
+          // 背景の高さを調整
+          const backgroundHeight = lgtmFontSize * 1.8; // 高さを少し大きくして余白を確保
+          const backgroundY = textY - backgroundHeight / 2;
 
-          // LGTMテキストの影を描画
+          // 背景表示が有効な場合のみ背景を描画
+          if (settings.showBackground) {
+            // 背景色の設定を適用
+            const bgColor = settings.bgColor || "black";
+            ctx.fillStyle = `rgba(${getColorRGBValues(bgColor)}, ${
+              settings.bgOpacity
+            })`;
+            ctx.fillRect(0, backgroundY, targetWidth, backgroundHeight);
+          }
+
+          // 下位互換のためtextColorをmainTextColorとsubTextColorに適用
+          const mainColor =
+            settings.mainTextColor || settings.textColor || "white";
+          const subColor =
+            settings.subTextColor || settings.textColor || "white";
+
+          // メインテキスト（LGTM）の描画
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+
+          // メインテキストの影設定
           ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
           ctx.shadowBlur = lgtmFontSize * 0.15;
           ctx.shadowOffsetX = 0;
           ctx.shadowOffsetY = lgtmFontSize * 0.05;
 
-          // LGTM（メインテキスト）
-          ctx.fillStyle = settings.textColor;
+          // LGTM（メインテキスト）のフォント設定
           ctx.font = `bold ${lgtmFontSize}px ${settings.mainFont}`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
 
-          // メインテキストの位置を調整
-          ctx.fillText("LGTM", targetWidth / 2, textY - lgtmFontSize * 0.1);
+          ctx.fillStyle = mainColor;
+
+          // メインテキストの位置を調整して描画
+          if (settings.showMainText) {
+            ctx.fillText("LGTM", targetWidth / 2, textY - lgtmFontSize * 0.1);
+          }
 
           // サブテキスト（Looks Good To Me）をさらに下に配置
           if (settings.showSubtext) {
             ctx.shadowBlur = subtextFontSize * 0.1;
             ctx.font = `${subtextFontSize}px ${settings.subFont}`;
+
+            // サブテキスト
             ctx.fillStyle =
-              settings.textColor === "white"
+              subColor === "white"
                 ? "rgba(255, 255, 255, 0.85)"
-                : `${settings.textColor}CC`; // カラーコードに透明度を追加
+                : addAlphaToColor(subColor, 0.85);
 
             // サブテキストの影を軽くする
             ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
@@ -135,6 +170,104 @@ export function generateLGTMImage(
 
     img.src = selectedImage;
   });
+}
+
+/**
+ * グラデーションを作成する補助関数
+ */
+function createTextGradient(
+  ctx: CanvasRenderingContext2D,
+  gradientConfig: { colors: string[]; direction: string },
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number
+): CanvasGradient {
+  const gradient =
+    gradientConfig.direction === "horizontal"
+      ? ctx.createLinearGradient(x0, y0, x1, y0)
+      : ctx.createLinearGradient(x0, y0, x0, y1);
+
+  gradientConfig.colors.forEach((color, index) => {
+    const offset = index / (gradientConfig.colors.length - 1);
+    gradient.addColorStop(offset, color);
+  });
+
+  return gradient;
+}
+
+/**
+ * カラーに透明度を追加する関数
+ */
+function addAlphaToColor(color: string, alpha: number): string {
+  // 16進数カラーコードの場合
+  if (color.startsWith("#")) {
+    return (
+      color +
+      Math.round(alpha * 255)
+        .toString(16)
+        .padStart(2, "0")
+    );
+  }
+  // CSSカラー名の場合
+  return color.includes("rgba")
+    ? color
+    : `${color.replace("rgb", "rgba").replace(")", ", " + alpha + ")")}`;
+}
+
+/**
+ * カラー名をRGB値に変換する関数
+ */
+function getColorRGBValues(color: string): string {
+  // 一般的なカラー名のRGB値マッピング
+  const colorMap: Record<string, string> = {
+    black: "0, 0, 0",
+    white: "255, 255, 255",
+    red: "255, 0, 0",
+    lime: "0, 255, 0",
+    blue: "0, 0, 255",
+    yellow: "255, 255, 0",
+    cyan: "0, 255, 255",
+    magenta: "255, 0, 255",
+    silver: "192, 192, 192",
+    gray: "128, 128, 128",
+    maroon: "128, 0, 0",
+    olive: "128, 128, 0",
+    green: "0, 128, 0",
+    purple: "128, 0, 128",
+    teal: "0, 128, 128",
+    navy: "0, 0, 128",
+    orange: "255, 165, 0",
+    pink: "255, 192, 203",
+    dodgerblue: "30, 144, 255",
+  };
+
+  // カラーマップにある場合はその値を返す
+  if (colorMap[color.toLowerCase()]) {
+    return colorMap[color.toLowerCase()];
+  }
+
+  // 16進数の場合は RGB に変換
+  if (color.startsWith("#")) {
+    let hex = color.substring(1);
+
+    // 短縮形の場合は展開する (#abc -> #aabbcc)
+    if (hex.length === 3) {
+      hex = hex
+        .split("")
+        .map((char) => char + char)
+        .join("");
+    }
+
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    return `${r}, ${g}, ${b}`;
+  }
+
+  // どれにも当てはまらない場合はデフォルトで黒を返す
+  return "0, 0, 0";
 }
 
 /**
